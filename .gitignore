@@ -1,0 +1,57 @@
+# Generic
+*.iml
+.kotlin
+.gradle
+**/build/
+xcuserdata
+!src/**/build/
+local.properties
+.idea
+.DS_Store
+captures
+.externalNativeBuild
+.cxx
+
+# IntelliJ
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizard.settings.xml
+.idea/deploymentTargetDropDown.xml
+*.iws
+
+# Android
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+snapshots/
+proguard-project.txt
+project.properties
+
+# iOS / Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+.apple_flp/
+DerivedData/
+*.moved-aside
+*.xcuserstate
+*.xccheckout
+*.ipa
+*.xcscheme
+
+# Kotlin Multiplatform
+.konan/
+kotlin-js-store/
+
+# Web
+node_modules/
+package-lock.json
+yarn.lock
