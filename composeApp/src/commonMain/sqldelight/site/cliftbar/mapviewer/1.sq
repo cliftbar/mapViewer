@@ -1,0 +1,10 @@
+CREATE TABLE docs (
+  key TEXT PRIMARY KEY NOT NULL,
+  document TEXT
+);
+
+getDocumentByKey:
+SELECT
+    document
+FROM docs
+WHERE key = ?;
