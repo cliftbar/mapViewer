@@ -1,10 +1,49 @@
-CREATE TABLE docs (
+CREATE TABLE config (
   key TEXT PRIMARY KEY NOT NULL,
-  document TEXT
+  value TEXT NOT NULL
 );
 
-getDocumentByKey:
-SELECT
-    document
-FROM docs
-WHERE key = ?;
+upsertConfig:
+INSERT OR REPLACE INTO config(key, value)
+VALUES (?, ?);
+
+getConfigByKey:
+SELECT value FROM config WHERE key = ?;
+
+getAllConfigKeys:
+SELECT key FROM config;
+
+deleteConfigByKey:
+DELETE FROM config WHERE key = ?;
+
+CREATE TABLE tracks (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE track_points (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id TEXT NOT NULL,
+    segment_index INTEGER NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    elevation REAL,
+    time INTEGER,
+    FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+);
+
+insertTrack:
+INSERT INTO tracks(id, name) VALUES (?, ?);
+
+insertPoint:
+INSERT INTO track_points(track_id, segment_index, latitude, longitude, elevation, time)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getAllTracks:
+SELECT * FROM tracks;
+
+getTrackPoints:
+SELECT * FROM track_points WHERE track_id = ? ORDER BY segment_index, id;
+
+deleteTrack:
+DELETE FROM tracks WHERE id = ?;

@@ -2,6 +2,9 @@ package site.cliftbar.mapviewer.location
 
 import android.annotation.SuppressLint
 import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.location.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -25,4 +28,10 @@ actual class LocationProvider(private val context: Context) {
             fusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
+}
+
+@Composable
+actual fun rememberLocationProvider(): LocationProvider {
+    val context = LocalContext.current
+    return remember { LocationProvider(context) }
 }

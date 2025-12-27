@@ -16,10 +16,13 @@ kotlin = "2.2.21"
 kotlinx-coroutines = "1.10.2"
 ktor = "3.3.3"
 logback = "1.5.22"
+playServicesLocation = "21.3.0"
 sqldelight = "2.2.1"
 voyager = "1.1.0-beta03"
 kotlinx-serialization = "1.8.0"
 kotlinx-datetime = "0.6.2"
+yamlkt = "0.13.0"
+pdvrieze-xmlutil = "0.90.3"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -37,6 +40,8 @@ logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 ktor-serverCore = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
 ktor-serverNetty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
 ktor-serverTestHost = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+serialutil = { module = "io.github.pdvrieze.xmlutil:serialutil", version.ref = "pdvrieze-xmlutil" }
 sqldelight-android = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelight-ios = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 sqldelight-desktop = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
@@ -45,6 +50,7 @@ sqldelight-web = { module = "app.cash.sqldelight:web-worker-driver", version.ref
 
 voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
 voyager-screenModel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }
+voyager-tab-navigator = { module = "cafe.adriel.voyager:voyager-tab-navigator", version.ref = "voyager" }
 voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -55,6 +61,8 @@ ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", 
 
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+yamlkt = { module = "net.mamoe.yamlkt:yamlkt", version.ref = "yamlkt" }
+xmlutil = { module = "io.github.pdvrieze.xmlutil:serialization", version.ref = "pdvrieze-xmlutil" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

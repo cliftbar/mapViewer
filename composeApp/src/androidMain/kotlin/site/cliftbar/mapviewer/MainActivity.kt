@@ -7,13 +7,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 
+import site.cliftbar.mapviewer.db.AndroidDriverFactory
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        val database = MapViewerDB(AndroidDriverFactory(this).createDriver())
+
         setContent {
-            App()
+            App(database)
         }
     }
 }
@@ -21,5 +25,5 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun AppAndroidPreview() {
-    App()
+    // App() // Needs database now
 }

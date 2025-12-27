@@ -36,4 +36,13 @@ sealed class MapLayer(
         isOverlay = true,
         attribution = "© Waymarked Trails, © OpenStreetMap contributors"
     )
+
+    companion object {
+        val allLayers = listOf(
+            OpenStreetMap,
+            OpenCycleMap,
+            OpenSnowMap,
+            WaymarkedTrailsSki
+        )
+    }
 }

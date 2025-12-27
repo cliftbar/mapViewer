@@ -3,23 +3,29 @@ package site.cliftbar.mapviewer.ui.screens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.*
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Layers
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import site.cliftbar.mapviewer.config.Config
+import site.cliftbar.mapviewer.config.ConfigRepository
+import site.cliftbar.mapviewer.tracks.TrackRepository
 import site.cliftbar.mapviewer.map.MapLayer
 import site.cliftbar.mapviewer.map.TileProvider
 import site.cliftbar.mapviewer.network.httpClient
 import site.cliftbar.mapviewer.ui.components.MapView
 import site.cliftbar.mapviewer.ui.viewmodels.MapScreenModel
 
-class MapScreen : Tab {
+class MapScreen(
+    private val configRepository: ConfigRepository,
+    private val trackRepository: TrackRepository
+) : Tab {
     override val options: TabOptions
         @Composable
         get() = remember {
@@ -31,7 +37,8 @@ class MapScreen : Tab {
 
     @Composable
     override fun Content() {
-        val screenModel = rememberScreenModel { MapScreenModel() }
+        val config by configRepository.activeConfig.collectAsState()
+        val screenModel = rememberScreenModel { MapScreenModel(config, configRepository, trackRepository) }
         val tileProvider = remember { TileProvider(httpClient) }
         var showLayerMenu by remember { mutableStateOf(false) }
 
@@ -46,7 +53,10 @@ class MapScreen : Tab {
                 onInitializedChange = { screenModel.initialized = it },
                 viewSize = screenModel.viewSize,
                 onViewSizeChange = { screenModel.viewSize = it },
-                activeLayers = screenModel.activeLayers
+                activeLayers = screenModel.activeLayers,
+                activeTracks = screenModel.activeTracks,
+                initialLat = config.initialLat,
+                initialLon = config.initialLon
             )
 
             // Layer Selection Button
@@ -88,6 +98,7 @@ class MapScreen : Tab {
                                 } else {
                                     screenModel.activeLayers.add(0, layer)
                                 }
+                                screenModel.updateActiveLayers()
                                 showLayerMenu = false
                             },
                             trailingIcon = {
@@ -116,6 +127,7 @@ class MapScreen : Tab {
                                 } else {
                                     screenModel.activeLayers.add(layer)
                                 }
+                                screenModel.updateActiveLayers()
                                 showLayerMenu = false
                             },
                             trailingIcon = {

@@ -23,6 +23,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - Use `commonMain` as much as possible for logic.
 - Platform-specific code should be in `androidMain`, `iosMain`, `jvmMain`, etc., using expect/actual.
 - Keep `agent.md` updated with progress and important architectural decisions.
+- **Ask questions whenever something is unclear.**
 
 ## Current Progress
 - [x] Initial project structure created.
@@ -38,6 +39,9 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - [x] Fix map unresponsiveness after state hoisting (pointerInput state capture fix).
 - [x] Default map location set to Portland, Oregon.
 - [x] Support for multiple OSM-based layers (OpenSnowMap, Waymarked Trails, etc.).
+- [x] Build and dependency fixes (YAML decoupling for wasmJs, missing actuals).
+- [x] Auto-save map configuration (zoom, center, layers) to SQLite database.
+- [x] Support multiple configuration profiles and shared state synchronization.
 - [ ] Implement iOS Location Provider.
 - [ ] Implement Offline Map Support (SQLDelight/FileSystem tile caching).
 - [ ] Implement Track Recording and GPX storage.
@@ -65,20 +69,21 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 
 ### Configuration Loader (SQLite Persistence & YAML Overrides)
 #### Phase 1: Infrastructure & Dependencies
-1.  **Add YAML Parsing Library**: Integrate a KMP-compatible YAML library (e.g., `net.mamoe.yamlkt`).
-2.  **Define Configuration Schema**: Create a `@Serializable` `Config` data class in `commonMain`.
-3.  **SQLDelight Schema Update**: Add a `config` table to `1.sq` for key-value persistence.
+1.  **Add YAML Parsing Library**: Integrated `net.mamoe.yamlkt`. [x]
+2.  **Define Configuration Schema**: Created `@Serializable` `Config` data class. [x]
+3.  **SQLDelight Schema Update**: Added `config` table for key-value persistence. [x]
 
 #### Phase 2: Configuration Loader Logic
-1.  **Config Repository**: Create `ConfigRepository` in `commonMain` for serializing/deserializing config to SQLite.
-2.  **YAML Override Implementation**: Implement `expect val platformConfigPath` to locate `config.yaml` on each platform.
-3.  **Merge Logic**: Update `loadConfig()` to merge YAML values over SQLite values.
+1.  **Config Repository**: Created `ConfigRepository` in `commonMain`. [x]
+2.  **YAML Override Implementation**: Implemented `expect val platformConfigPath` and `readFile`. [x]
+3.  **Merge Logic**: Basic merge logic implemented (YAML takes precedence). [x]
+4.  **Decoupled YAML**: Moved YAML parsing to `expect/actual` to support `wasmJs`. [x]
 
 #### Phase 3: Integration & UI
-1.  **App Startup**: Initialize `ConfigRepository` and load config in `App.kt`.
-2.  **State Management**: Update `MapScreenModel` and others to react to config changes.
-3.  **Settings Screen**: Display config values, allow saving to SQLite, and indicate YAML overrides.
+1.  **App Startup**: Initialized `ConfigRepository` in `App.kt`. [x]
+2.  **State Management**: `MapScreenModel` now uses settings from `Config`. [x]
+3.  **Settings Screen**: Added UI to view and save configuration. [x]
 
 #### Phase 4: Validation & Testing
-1.  **Unit Tests**: Verify YAML > SQLite priority in `commonTest`.
-2.  **Platform Testing**: Verify platform-specific YAML loading.
+1.  **Unit Tests**: TBD [ ]
+2.  **Platform Testing**: TBD [ ]

@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import site.cliftbar.mapviewer.map.MapLayer
 import site.cliftbar.mapviewer.map.TileProvider
+import site.cliftbar.mapviewer.tracks.Track
 import kotlin.math.*
 
 fun latLonToTileX(lon: Double, zoom: Int): Double {
@@ -47,10 +48,11 @@ fun MapView(
     onInitializedChange: (Boolean) -> Unit,
     viewSize: IntSize,
     onViewSizeChange: (IntSize) -> Unit,
-    activeLayers: List<MapLayer> = listOf(MapLayer.OpenStreetMap)
+    activeLayers: List<MapLayer> = listOf(MapLayer.OpenStreetMap),
+    activeTracks: List<Track> = emptyList(),
+    initialLat: Double = 45.5152,
+    initialLon: Double = -122.6784
 ) {
-    val initialLat = 45.5152
-    val initialLon = -122.6784
     val tileSize = 256
 
     val coroutineScope = rememberCoroutineScope()
@@ -94,15 +96,21 @@ fun MapView(
         ) {
             val width = size.width
             val height = size.height
-            onViewSizeChange(IntSize(width.toInt(), height.toInt()))
+            
+            // Only update viewSize if it actually changed to avoid infinite save loops
+            val newSize = IntSize(width.toInt(), height.toInt())
+            if (newSize != viewSize) {
+                onViewSizeChange(newSize)
+            }
 
             if (!initialized && width > 0 && height > 0) {
                 val tileX = latLonToTileX(initialLon, zoom)
                 val tileY = latLonToTileY(initialLat, zoom)
-                onCenterOffsetChange(Offset(
+                val newOffset = Offset(
                     (width / 2f) - (tileX * tileSize).toFloat(),
                     (height / 2f) - (tileY * tileSize).toFloat()
-                ))
+                )
+                onCenterOffsetChange(newOffset)
                 onInitializedChange(true)
             }
 
@@ -134,6 +142,33 @@ fun MapView(
                                     tiles[key] = newTile
                                 }
                                 loadingTiles.remove(key)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Draw tracks
+            activeTracks.forEach { track ->
+                track.segments.forEach { segment ->
+                    if (segment.points.size > 1) {
+                        for (i in 0 until segment.points.size - 1) {
+                            val p1 = segment.points[i]
+                            val p2 = segment.points[i + 1]
+
+                            val x1 = latLonToTileX(p1.longitude, zoom) * tileSize + centerOffset.x
+                            val y1 = latLonToTileY(p1.latitude, zoom) * tileSize + centerOffset.y
+                            val x2 = latLonToTileX(p2.longitude, zoom) * tileSize + centerOffset.x
+                            val y2 = latLonToTileY(p2.latitude, zoom) * tileSize + centerOffset.y
+
+                            // Simple culling - check if at least one point is on screen
+                            if ((x1 in 0f..width || x2 in 0f..width) && (y1 in 0f..height || y2 in 0f..height)) {
+                                drawLine(
+                                    color = androidx.compose.ui.graphics.Color.Blue,
+                                    start = Offset(x1.toFloat(), y1.toFloat()),
+                                    end = Offset(x2.toFloat(), y2.toFloat()),
+                                    strokeWidth = 4f
+                                )
                             }
                         }
                     }

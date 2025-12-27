@@ -14,21 +14,25 @@ import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import site.cliftbar.mapviewer.config.ConfigRepository
+import site.cliftbar.mapviewer.tracks.TrackRepository
 import site.cliftbar.mapviewer.ui.screens.MapScreen
 import site.cliftbar.mapviewer.ui.screens.SettingsScreen
 import site.cliftbar.mapviewer.ui.screens.TrackManagementScreen
 
 @Composable
-@Preview
-fun App() {
+fun App(database: MapViewerDB) {
+    val configRepository = remember { ConfigRepository(database) }
+    val trackRepository = remember { TrackRepository(database) }
+
     MaterialTheme {
-        TabNavigator(MapScreen()) {
+        TabNavigator(MapScreen(configRepository, trackRepository)) {
             Scaffold(
                 bottomBar = {
                     NavigationBar {
-                        TabNavigationItem(MapScreen())
-                        TabNavigationItem(TrackManagementScreen())
-                        TabNavigationItem(SettingsScreen())
+                        TabNavigationItem(MapScreen(configRepository, trackRepository))
+                        TabNavigationItem(TrackManagementScreen(trackRepository))
+                        TabNavigationItem(SettingsScreen(configRepository))
                     }
                 }
             ) { paddingValues ->

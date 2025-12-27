@@ -15,7 +15,7 @@ plugins {
 // Error is ok
 sqldelight {
     databases {
-        create(name = "MapViewerDB") {
+        register("MapViewerDB") {
             packageName.set("site.cliftbar.mapviewer")
         }
     }
@@ -57,8 +57,9 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.sqldelight.android)
-            implementation("io.ktor:ktor-client-okhttp:3.3.3")
-            implementation("com.google.android.gms:play-services-location:21.3.0")
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.play.services.location)
+            implementation(libs.yamlkt)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -73,30 +74,35 @@ kotlin {
             implementation(libs.sqldelight.coroutines)
             implementation(compose.materialIconsExtended)
 
-            implementation("cafe.adriel.voyager:voyager-navigator:1.1.0-beta03")
-            implementation("cafe.adriel.voyager:voyager-screenmodel:1.1.0-beta03")
-            implementation("cafe.adriel.voyager:voyager-tab-navigator:1.1.0-beta03")
-            implementation("cafe.adriel.voyager:voyager-transitions:1.1.0-beta03")
+            implementation(libs.voyager.navigator)
+            implementation(libs.voyager.screenModel)
+            implementation(libs.voyager.tab.navigator)
+            implementation(libs.voyager.transitions)
 
-            implementation("io.ktor:ktor-client-core:3.3.3")
-            implementation("io.ktor:ktor-client-content-negotiation:3.3.3")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.3")
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.json)
 
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.datetime)
+            implementation(libs.xmlutil)
+            implementation(libs.serialutil)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.datetime)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.sqldelight.desktop)
-            implementation("io.ktor:ktor-client-okhttp:3.3.3")
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.yamlkt)
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.ios)
-            implementation("io.ktor:ktor-client-darwin:3.3.3")
+            implementation(libs.ktor.client.darwin)
+            implementation(libs.yamlkt)
         }
     }
 }
