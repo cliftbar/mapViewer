@@ -11,6 +11,9 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import site.cliftbar.mapviewer.config.Config
 import site.cliftbar.mapviewer.config.ConfigRepository
 
+import androidx.compose.foundation.clickable
+import site.cliftbar.mapviewer.config.AppTheme
+
 class SettingsScreen(
     private val configRepository: ConfigRepository
 ) : Tab {
@@ -54,6 +57,26 @@ class SettingsScreen(
                     checked = currentConfig.offlineMode,
                     onCheckedChange = { currentConfig = currentConfig.copy(offlineMode = it) }
                 )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Theme Selection
+            Text("Theme", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AppTheme.values().forEach { theme ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { currentConfig = currentConfig.copy(theme = theme) }
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        RadioButton(
+                            selected = currentConfig.theme == theme,
+                            onClick = { currentConfig = currentConfig.copy(theme = theme) }
+                        )
+                        Text(theme.name.lowercase().replaceFirstChar { it.uppercase() })
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.weight(1f))

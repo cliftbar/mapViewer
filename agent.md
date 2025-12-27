@@ -83,6 +83,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 1.  **App Startup**: Initialized `ConfigRepository` in `App.kt`. [x]
 2.  **State Management**: `MapScreenModel` now uses settings from `Config`. [x]
 3.  **Settings Screen**: Added UI to view and save configuration. [x]
+4.  **Dark Theme**: Added support for dark/light themes and macOS title bar synchronization. [x]
 
 #### Phase 4: Validation & Testing
 1.  **Unit Tests**: TBD [ ]

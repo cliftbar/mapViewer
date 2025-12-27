@@ -20,12 +20,26 @@ import site.cliftbar.mapviewer.ui.screens.MapScreen
 import site.cliftbar.mapviewer.ui.screens.SettingsScreen
 import site.cliftbar.mapviewer.ui.screens.TrackManagementScreen
 
-@Composable
-fun App(database: MapViewerDB) {
-    val configRepository = remember { ConfigRepository(database) }
-    val trackRepository = remember { TrackRepository(database) }
+import androidx.compose.foundation.isSystemInDarkTheme
+import site.cliftbar.mapviewer.config.AppTheme
 
-    MaterialTheme {
+@Composable
+fun App(
+    database: MapViewerDB,
+    configRepository: ConfigRepository = remember { ConfigRepository(database) },
+    trackRepository: TrackRepository = remember { TrackRepository(database) }
+) {
+    val config by configRepository.activeConfig.collectAsState()
+
+    val darkTheme = when (config.theme) {
+        AppTheme.SYSTEM -> isSystemInDarkTheme()
+        AppTheme.LIGHT -> false
+        AppTheme.DARK -> true
+    }
+
+    MaterialTheme(
+        colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()
+    ) {
         TabNavigator(MapScreen(configRepository, trackRepository)) {
             Scaffold(
                 bottomBar = {
