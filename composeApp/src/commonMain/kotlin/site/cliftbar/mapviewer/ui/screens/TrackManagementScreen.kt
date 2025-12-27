@@ -17,10 +17,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import site.cliftbar.mapviewer.tracks.LineStyle
 import site.cliftbar.mapviewer.tracks.Track
 import site.cliftbar.mapviewer.tracks.TrackRepository
 import site.cliftbar.mapviewer.platform.rememberFilePicker
+import site.cliftbar.mapviewer.platform.rememberColorPicker
 import kotlinx.coroutines.launch
 
 class TrackManagementScreen(
@@ -185,6 +189,7 @@ class TrackManagementScreen(
     ) {
         var selectedColor by remember { mutableStateOf(track.color) }
         var selectedStyle by remember { mutableStateOf(track.lineStyle) }
+        val colorPicker = rememberColorPicker()
 
         AlertDialog(
             onDismissRequest = onDismiss,
@@ -192,7 +197,10 @@ class TrackManagementScreen(
             text = {
                 Column {
                     Text("Color", style = MaterialTheme.typography.labelLarge)
-                    Row(modifier = Modifier.padding(vertical = 8.dp)) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         val colors = listOf("#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#000000")
                         colors.forEach { color ->
                             Box(
@@ -206,6 +214,28 @@ class TrackManagementScreen(
                                         } else it
                                     }
                                     .clickable { selectedColor = color }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                .clickable {
+                                    colorPicker.pickColor(parseColor(selectedColor)) { color ->
+                                        selectedColor = colorToHex(color)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Palette,
+                                contentDescription = "Custom Color",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
                     }
@@ -251,5 +281,12 @@ class TrackManagementScreen(
 
     private fun hexToLong(hex: String): Long {
         return hex.toLong(16)
+    }
+
+    private fun colorToHex(color: androidx.compose.ui.graphics.Color): String {
+        val r = (color.red * 255).toInt().toString(16).padStart(2, '0')
+        val g = (color.green * 255).toInt().toString(16).padStart(2, '0')
+        val b = (color.blue * 255).toInt().toString(16).padStart(2, '0')
+        return "#${r}${g}${b}".uppercase()
     }
 }

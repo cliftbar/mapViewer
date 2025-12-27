@@ -11,13 +11,13 @@ actual fun createDriver(): SqlDriver {
     val databaseFile = File("mapviewer.db")
     val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:${databaseFile.absolutePath}")
     val currentVersion = getVersion(driver)
-    val isBrokenV3 = currentVersion == 3L && !hasColorColumn(driver)
+    val isBroken = currentVersion == MapViewerDB.Schema.version && !hasColorColumn(driver)
 
     if (currentVersion == 0L) {
         MapViewerDB.Schema.create(driver)
         setVersion(driver, MapViewerDB.Schema.version)
-    } else if (currentVersion < MapViewerDB.Schema.version || isBrokenV3) {
-        val startVersion = if (isBrokenV3) 2L else currentVersion
+    } else if (currentVersion < MapViewerDB.Schema.version || isBroken) {
+        val startVersion = if (isBroken) MapViewerDB.Schema.version - 1 else currentVersion
         MapViewerDB.Schema.migrate(driver, startVersion, MapViewerDB.Schema.version)
         setVersion(driver, MapViewerDB.Schema.version)
     }

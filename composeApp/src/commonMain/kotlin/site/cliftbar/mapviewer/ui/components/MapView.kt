@@ -168,26 +168,29 @@ fun MapView(
 
                 track.segments.forEach { segment ->
                     if (segment.points.size > 1) {
-                        for (i in 0 until segment.points.size - 1) {
-                            val p1 = segment.points[i]
-                            val p2 = segment.points[i + 1]
+                        val path = androidx.compose.ui.graphics.Path()
+                        var first = true
 
-                            val x1 = latLonToTileX(p1.longitude, zoom) * tileSize + centerOffset.x
-                            val y1 = latLonToTileY(p1.latitude, zoom) * tileSize + centerOffset.y
-                            val x2 = latLonToTileX(p2.longitude, zoom) * tileSize + centerOffset.x
-                            val y2 = latLonToTileY(p2.latitude, zoom) * tileSize + centerOffset.y
+                        for (p in segment.points) {
+                            val x = latLonToTileX(p.longitude, zoom) * tileSize + centerOffset.x
+                            val y = latLonToTileY(p.latitude, zoom) * tileSize + centerOffset.y
 
-                            // Simple culling - check if at least one point is on screen
-                            if ((x1 in 0f..width || x2 in 0f..width) && (y1 in 0f..height || y2 in 0f..height)) {
-                                drawLine(
-                                    color = trackColor,
-                                    start = Offset(x1.toFloat(), y1.toFloat()),
-                                    end = Offset(x2.toFloat(), y2.toFloat()),
-                                    strokeWidth = 4f,
-                                    pathEffect = pathEffect
-                                )
+                            if (first) {
+                                path.moveTo(x.toFloat(), y.toFloat())
+                                first = false
+                            } else {
+                                path.lineTo(x.toFloat(), y.toFloat())
                             }
                         }
+
+                        drawPath(
+                            path = path,
+                            color = trackColor,
+                            style = Stroke(
+                                width = 4f,
+                                pathEffect = pathEffect
+                            )
+                        )
                     }
                 }
             }
