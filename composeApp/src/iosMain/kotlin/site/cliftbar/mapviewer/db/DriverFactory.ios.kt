@@ -9,5 +9,6 @@ actual fun createDriver(): SqlDriver {
 }
 
 actual fun createInMemoryDriver(): SqlDriver {
-    return NativeSqliteDriver(MapViewerDB.Schema, "test.db") // Just use a test file for now if null is not allowed
+    val randomId = kotlin.random.Random.nextInt(1000000)
+    return NativeSqliteDriver(MapViewerDB.Schema, "test_$randomId.db")
 }

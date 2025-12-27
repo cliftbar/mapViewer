@@ -49,9 +49,9 @@ DerivedData/
 
 # Kotlin Multiplatform
 .konan/
-kotlin-js-store/
 
 # Web
 node_modules/
 package-lock.json
-yarn.lock
+# Root yarn.lock is usually committed, but if the user wants it ignored they can add it back specifically.
+# However, KMP often uses kotlin-js-store for internal JS/Wasm dependencies.

@@ -16,5 +16,14 @@ class AndroidDriverFactory(private val context: Context) {
 }
 
 actual fun createInMemoryDriver(): SqlDriver {
-    throw RuntimeException("Android requires Context for in-memory driver. Not implemented for commonTest.")
+    return try {
+        // Try JDBC first (works in Android unit tests if sqldelight-desktop-driver is on classpath)
+        val jdbcClass = Class.forName("app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver")
+        val constructor = jdbcClass.getConstructor(String::class.java)
+        val driver = constructor.newInstance("jdbc:sqlite::memory:") as SqlDriver
+        MapViewerDB.Schema.create(driver)
+        driver
+    } catch (e: Throwable) {
+        throw RuntimeException("Android requires Context for in-memory driver. Not implemented for commonTest on real device.")
+    }
 }

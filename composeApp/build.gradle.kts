@@ -92,6 +92,12 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.datetime)
         }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.sqldelight.desktop)
+                implementation(libs.robolectric)
+            }
+        }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
@@ -118,6 +124,9 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+    }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
     packaging {
         resources {

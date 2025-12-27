@@ -92,28 +92,26 @@ object GpxParser {
         }
     }
 
-    @OptIn(kotlin.ExperimentalStdlibApi::class, kotlin.time.ExperimentalTime::class)
     fun serialize(track: Track): String {
-        val sb = StringBuilder()
-        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-        sb.append("<gpx version=\"1.1\" creator=\"MapViewer\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n")
-        sb.append("  <trk>\n")
-        sb.append("    <name>${track.name}</name>\n")
-        track.segments.forEach { segment ->
-            sb.append("    <trkseg>\n")
-            segment.points.forEach { point ->
-                sb.append("      <trkpt lat=\"${point.latitude}\" lon=\"${point.longitude}\">\n")
-                point.elevation?.let { sb.append("        <ele>$it</ele>\n") }
-                point.time?.let { 
-                    // Manual format if Instant is missing at runtime
-                    sb.append("        <time>$it</time>\n")
-                }
-                sb.append("      </trkpt>\n")
-            }
-            sb.append("    </trkseg>\n")
-        }
-        sb.append("  </trk>\n")
-        sb.append("</gpx>")
-        return sb.toString()
+        val gpxData = GpxData(
+            tracks = listOf(
+                GpxTrack(
+                    name = track.name,
+                    segments = track.segments.map { segment ->
+                        GpxSegment(
+                            points = segment.points.map { point ->
+                                GpxPoint(
+                                    lat = point.latitude,
+                                    lon = point.longitude,
+                                    ele = point.elevation,
+                                    time = point.time?.let { Instant.fromEpochMilliseconds(it).toString() }
+                                )
+                            }
+                        )
+                    }
+                )
+            )
+        )
+        return xml.encodeToString(gpxData)
     }
 }

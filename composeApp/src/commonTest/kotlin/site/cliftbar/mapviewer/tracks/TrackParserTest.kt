@@ -1,8 +1,6 @@
 package site.cliftbar.mapviewer.tracks
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 class TrackParserTest {
 
@@ -57,12 +55,11 @@ class TrackParserTest {
 
         val gpx = GpxParser.serialize(track)
         assertNotNull(gpx)
-        println(gpx)
         // Basic check for contents
-        assertEquals(true, gpx.contains("<name>Test Track</name>"))
-        assertEquals(true, gpx.contains("lat=\"10.0\""))
-        assertEquals(true, gpx.contains("lon=\"20.0\""))
-        assertEquals(true, gpx.contains("<ele>100.0</ele>"))
-        assertEquals(true, gpx.contains("<time>1600000000000</time>"))
+        assertTrue(gpx.contains("<name>Test Track</name>"), "Should contain name")
+        assertTrue(gpx.contains("lat=\"10"), "Should contain lat 10")
+        assertTrue(gpx.contains("lon=\"20"), "Should contain lon 20")
+        assertTrue(gpx.contains("<ele>100"), "Should contain elevation")
+        assertTrue(gpx.contains("<time>2020-09-13T12:26:40Z</time>"), "Should contain time in ISO-8601 format")
     }
 }
