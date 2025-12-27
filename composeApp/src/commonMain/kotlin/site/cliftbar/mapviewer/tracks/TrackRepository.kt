@@ -37,6 +37,7 @@ class TrackRepository(private val database: MapViewerDB) {
         val id = if (track.id.isBlank()) Random.nextLong().toString() else track.id
         queries.transaction {
             queries.insertTrack(id, track.name)
+            queries.deleteAllPoints(id)
             track.segments.forEachIndexed { segmentIndex, segment ->
                 segment.points.forEach { point ->
                     queries.insertPoint(
@@ -62,9 +63,10 @@ class TrackRepository(private val database: MapViewerDB) {
             "gpx" -> GpxParser.parse(content)
             "geojson" -> GeoJsonParser.parse(content)
             else -> null
-        }
-        track?.let { saveTrack(it) }
-        return track
+        } ?: return null
+        
+        val id = saveTrack(track)
+        return track.copy(id = id)
     }
 
     fun exportTrack(track: Track, format: String): String? {

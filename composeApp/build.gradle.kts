@@ -98,6 +98,7 @@ kotlin {
             implementation(libs.sqldelight.desktop)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.yamlkt)
+            implementation(libs.kotlinx.datetime)
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.ios)

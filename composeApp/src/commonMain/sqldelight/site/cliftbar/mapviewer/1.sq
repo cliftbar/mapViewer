@@ -1,4 +1,4 @@
-CREATE TABLE config (
+CREATE TABLE IF NOT EXISTS config (
   key TEXT PRIMARY KEY NOT NULL,
   value TEXT NOT NULL
 );
@@ -16,12 +16,12 @@ SELECT key FROM config;
 deleteConfigByKey:
 DELETE FROM config WHERE key = ?;
 
-CREATE TABLE tracks (
+CREATE TABLE IF NOT EXISTS tracks (
     id TEXT PRIMARY KEY NOT NULL,
     name TEXT NOT NULL
 );
 
-CREATE TABLE track_points (
+CREATE TABLE IF NOT EXISTS track_points (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     track_id TEXT NOT NULL,
     segment_index INTEGER NOT NULL,
@@ -33,11 +33,14 @@ CREATE TABLE track_points (
 );
 
 insertTrack:
-INSERT INTO tracks(id, name) VALUES (?, ?);
+INSERT OR REPLACE INTO tracks(id, name) VALUES (?, ?);
 
 insertPoint:
 INSERT INTO track_points(track_id, segment_index, latitude, longitude, elevation, time)
 VALUES (?, ?, ?, ?, ?, ?);
+
+deleteAllPoints:
+DELETE FROM track_points WHERE track_id = ?;
 
 getAllTracks:
 SELECT * FROM tracks;
