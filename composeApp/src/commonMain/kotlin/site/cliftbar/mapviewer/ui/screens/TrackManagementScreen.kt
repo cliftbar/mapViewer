@@ -1,6 +1,8 @@
 package site.cliftbar.mapviewer.ui.screens
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
+import site.cliftbar.mapviewer.tracks.LineStyle
+import site.cliftbar.mapviewer.tracks.Track
 import site.cliftbar.mapviewer.tracks.TrackRepository
 import site.cliftbar.mapviewer.platform.rememberFilePicker
 import kotlinx.coroutines.launch
@@ -29,16 +37,18 @@ class TrackManagementScreen(
 
     @Composable
     override fun Content() {
-        val tracks = remember { mutableStateListOf<site.cliftbar.mapviewer.tracks.Track>() }
+        val tracks = remember { mutableStateListOf<Track>() }
         val scope = rememberCoroutineScope()
         val filePicker = rememberFilePicker()
+        var editingTrack by remember { mutableStateOf<Track?>(null) }
 
         LaunchedEffect(Unit) {
+            tracks.clear()
             tracks.addAll(trackRepository.getAllTracks())
         }
 
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Text("Tracks", style = androidx.compose.material3.MaterialTheme.typography.headlineMedium)
+            Text("Tracks", style = MaterialTheme.typography.headlineMedium)
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -76,32 +86,170 @@ class TrackManagementScreen(
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(tracks) { track ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(track.name, modifier = Modifier.weight(1f))
-                        
-                        TextButton(onClick = {
+                    TrackItem(
+                        track = track,
+                        onVisibilityChange = { visible ->
+                            trackRepository.updateTrackVisibility(track.id, visible)
+                            val index = tracks.indexOfFirst { it.id == track.id }
+                            if (index != -1) {
+                                tracks[index] = track.copy(visible = visible)
+                            }
+                        },
+                        onEdit = { editingTrack = track },
+                        onExport = {
                             val gpx = trackRepository.exportTrack(track, "gpx")
                             gpx?.let {
                                 scope.launch {
                                     filePicker.saveFile("${track.name}.gpx", it)
                                 }
                             }
-                        }) {
-                            Text("GPX")
-                        }
-                        
-                        IconButton(onClick = {
+                        },
+                        onDelete = {
                             trackRepository.deleteTrack(track.id)
                             tracks.remove(track)
-                        }) {
-                            Text("X")
                         }
-                    }
+                    )
                 }
             }
         }
+
+        editingTrack?.let { track ->
+            TrackEditDialog(
+                track = track,
+                onDismiss = { editingTrack = null },
+                onSave = { color, style ->
+                    trackRepository.updateTrackStyle(track.id, color, style)
+                    val index = tracks.indexOfFirst { it.id == track.id }
+                    if (index != -1) {
+                        tracks[index] = track.copy(color = color, lineStyle = style)
+                    }
+                    editingTrack = null
+                }
+            )
+        }
+    }
+
+    @Composable
+    private fun TrackItem(
+        track: Track,
+        onVisibilityChange: (Boolean) -> Unit,
+        onEdit: () -> Unit,
+        onExport: () -> Unit,
+        onDelete: () -> Unit
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = track.visible,
+                onCheckedChange = onVisibilityChange
+            )
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(track.name, style = MaterialTheme.typography.bodyLarge)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .padding(2.dp)
+                            .background(parseColor(track.color))
+                    )
+                    Text(
+                        " ${track.lineStyle.name}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+            
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit Style")
+            }
+            
+            IconButton(onClick = onExport) {
+                Icon(Icons.Default.Download, contentDescription = "Export GPX")
+            }
+            
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete")
+            }
+        }
+    }
+
+    @Composable
+    private fun TrackEditDialog(
+        track: Track,
+        onDismiss: () -> Unit,
+        onSave: (String, LineStyle) -> Unit
+    ) {
+        var selectedColor by remember { mutableStateOf(track.color) }
+        var selectedStyle by remember { mutableStateOf(track.lineStyle) }
+
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Edit Track Style") },
+            text = {
+                Column {
+                    Text("Color", style = MaterialTheme.typography.labelLarge)
+                    Row(modifier = Modifier.padding(vertical = 8.dp)) {
+                        val colors = listOf("#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#000000")
+                        colors.forEach { color ->
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .padding(4.dp)
+                                    .background(parseColor(color))
+                                    .let {
+                                        if (selectedColor == color) {
+                                            it.border(2.dp, MaterialTheme.colorScheme.primary)
+                                        } else it
+                                    }
+                                    .clickable { selectedColor = color }
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text("Line Style", style = MaterialTheme.typography.labelLarge)
+                    Column {
+                        LineStyle.values().forEach { style ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().clickable { selectedStyle = style }
+                            ) {
+                                RadioButton(selected = selectedStyle == style, onClick = { selectedStyle = style })
+                                Text(style.name)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { onSave(selectedColor, selectedStyle) }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    private fun parseColor(hex: String): androidx.compose.ui.graphics.Color {
+        return try {
+            val colorStr = if (hex.startsWith("#")) hex.substring(1) else hex
+            val color = hexToLong(colorStr)
+            androidx.compose.ui.graphics.Color(color or 0xFF000000)
+        } catch (e: Exception) {
+            androidx.compose.ui.graphics.Color.Blue
+        }
+    }
+
+    private fun hexToLong(hex: String): Long {
+        return hex.toLong(16)
     }
 }

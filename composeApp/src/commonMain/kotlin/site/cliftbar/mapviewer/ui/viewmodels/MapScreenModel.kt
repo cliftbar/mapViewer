@@ -23,7 +23,12 @@ class MapScreenModel(
     val activeTracks = mutableStateListOf<Track>()
 
     init {
-        activeTracks.addAll(trackRepository.getAllTracks())
+        refreshTracks()
+    }
+
+    fun refreshTracks() {
+        activeTracks.clear()
+        activeTracks.addAll(trackRepository.getVisibleTracks())
     }
 
     private var _zoom by mutableStateOf(initialConfig.defaultZoom)

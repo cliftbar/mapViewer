@@ -17,6 +17,10 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import site.cliftbar.mapviewer.map.MapLayer
 import site.cliftbar.mapviewer.map.TileProvider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import site.cliftbar.mapviewer.tracks.LineStyle
 import site.cliftbar.mapviewer.tracks.Track
 import kotlin.math.*
 
@@ -150,6 +154,18 @@ fun MapView(
 
             // Draw tracks
             activeTracks.forEach { track ->
+                val trackColor = try {
+                    Color(track.color.substring(1).toLong(16) or 0xFF000000)
+                } catch (e: Exception) {
+                    Color.Blue
+                }
+
+                val pathEffect = when (track.lineStyle) {
+                    LineStyle.SOLID -> null
+                    LineStyle.DASHED -> PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    LineStyle.DOTTED -> PathEffect.dashPathEffect(floatArrayOf(2f, 10f), 0f)
+                }
+
                 track.segments.forEach { segment ->
                     if (segment.points.size > 1) {
                         for (i in 0 until segment.points.size - 1) {
@@ -164,10 +180,11 @@ fun MapView(
                             // Simple culling - check if at least one point is on screen
                             if ((x1 in 0f..width || x2 in 0f..width) && (y1 in 0f..height || y2 in 0f..height)) {
                                 drawLine(
-                                    color = androidx.compose.ui.graphics.Color.Blue,
+                                    color = trackColor,
                                     start = Offset(x1.toFloat(), y1.toFloat()),
                                     end = Offset(x2.toFloat(), y2.toFloat()),
-                                    strokeWidth = 4f
+                                    strokeWidth = 4f,
+                                    pathEffect = pathEffect
                                 )
                             }
                         }

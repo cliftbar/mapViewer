@@ -18,7 +18,10 @@ DELETE FROM config WHERE key = ?;
 
 CREATE TABLE IF NOT EXISTS tracks (
     id TEXT PRIMARY KEY NOT NULL,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    color TEXT NOT NULL DEFAULT '#0000FF',
+    line_style TEXT NOT NULL DEFAULT 'SOLID',
+    visible INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS track_points (
@@ -33,7 +36,7 @@ CREATE TABLE IF NOT EXISTS track_points (
 );
 
 insertTrack:
-INSERT OR REPLACE INTO tracks(id, name) VALUES (?, ?);
+INSERT OR REPLACE INTO tracks(id, name, color, line_style, visible) VALUES (?, ?, ?, ?, ?);
 
 insertPoint:
 INSERT INTO track_points(track_id, segment_index, latitude, longitude, elevation, time)
@@ -45,8 +48,17 @@ DELETE FROM track_points WHERE track_id = ?;
 getAllTracks:
 SELECT * FROM tracks;
 
+getVisibleTracks:
+SELECT * FROM tracks WHERE visible = 1;
+
 getTrackPoints:
 SELECT * FROM track_points WHERE track_id = ? ORDER BY segment_index, id;
 
 deleteTrack:
 DELETE FROM tracks WHERE id = ?;
+
+updateTrackVisibility:
+UPDATE tracks SET visible = ? WHERE id = ?;
+
+updateTrackStyle:
+UPDATE tracks SET color = ?, line_style = ? WHERE id = ?;

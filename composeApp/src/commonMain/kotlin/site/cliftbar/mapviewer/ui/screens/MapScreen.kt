@@ -42,6 +42,10 @@ class MapScreen(
         val tileProvider = remember { TileProvider(httpClient) }
         var showLayerMenu by remember { mutableStateOf(false) }
 
+        LaunchedEffect(Unit) {
+            screenModel.refreshTracks()
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
             MapView(
                 tileProvider = tileProvider,
