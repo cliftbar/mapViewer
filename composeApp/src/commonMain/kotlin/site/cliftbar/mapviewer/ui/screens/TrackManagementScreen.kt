@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import site.cliftbar.mapviewer.tracks.LineStyle
@@ -46,7 +48,9 @@ class TrackManagementScreen : Tab {
     @Composable
     override fun Content() {
         val trackRepository = site.cliftbar.mapviewer.LocalTrackRepository.current
-        val screenModel = rememberScreenModel { TrackManagementScreenModel(trackRepository) }
+        val screenModel = rememberScreenModel { 
+            TrackManagementScreenModel(trackRepository).apply { refreshTracks() }
+        }
         val scope = rememberCoroutineScope()
         val filePicker = rememberFilePicker()
         var editingTrack by remember { mutableStateOf<Track?>(null) }
@@ -56,6 +60,29 @@ class TrackManagementScreen : Tab {
             
             Spacer(modifier = Modifier.height(16.dp))
             
+            if (screenModel.selectedTrackIds.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("${screenModel.selectedTrackIds.size} selected", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(onClick = { screenModel.updateSelectedTracksVisibility(true) }) {
+                        Icon(Icons.Default.Visibility, contentDescription = "Make Visible")
+                    }
+                    IconButton(onClick = { screenModel.updateSelectedTracksVisibility(false) }) {
+                        Icon(Icons.Default.VisibilityOff, contentDescription = "Hide")
+                    }
+                    IconButton(onClick = { screenModel.deleteSelectedTracks() }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete Selected")
+                    }
+                    TextButton(onClick = { screenModel.clearSelection() }) {
+                        Text("Clear")
+                    }
+                }
+            }
+
             Row {
                 Button(onClick = {
                     scope.launch {
@@ -102,8 +129,11 @@ class TrackManagementScreen : Tab {
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(screenModel.tracks) { track ->
+                    val isSelected = screenModel.selectedTrackIds[track.id] ?: false
                     TrackItem(
                         track = track,
+                        isSelected = isSelected,
+                        onToggleSelection = { screenModel.toggleSelection(track.id) },
                         onVisibilityChange = { visible ->
                             screenModel.updateTrackVisibility(track.id, visible)
                         },
@@ -139,6 +169,8 @@ class TrackManagementScreen : Tab {
     @Composable
     private fun TrackItem(
         track: Track,
+        isSelected: Boolean,
+        onToggleSelection: () -> Unit,
         onVisibilityChange: (Boolean) -> Unit,
         onEdit: () -> Unit,
         onExport: () -> Unit,
@@ -148,6 +180,11 @@ class TrackManagementScreen : Tab {
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onToggleSelection() }
+            )
+
             Checkbox(
                 checked = track.visible,
                 onCheckedChange = onVisibilityChange

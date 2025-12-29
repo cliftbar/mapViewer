@@ -38,11 +38,13 @@ sealed class MapLayer(
     )
 
     companion object {
-        val allLayers = listOf(
-            OpenStreetMap,
-            OpenCycleMap,
-            OpenSnowMap,
-            WaymarkedTrailsSki
-        )
+        val allLayers: List<MapLayer> by lazy {
+            listOf(
+                OpenStreetMap,
+                OpenCycleMap,
+                OpenSnowMap,
+                WaymarkedTrailsSki
+            )
+        }
     }
 }

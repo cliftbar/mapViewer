@@ -20,7 +20,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testSaveAndGetAllTracks() = runTest {
+    fun testSaveAndGetAllTracks() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val track = Track(
             id = "test-track",
@@ -49,7 +49,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testImportGeoJson() = runTest {
+    fun testImportGeoJson() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val geoJson = """
             {
@@ -84,7 +84,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testImportGpx() = runTest {
+    fun testImportGpx() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val gpx = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -118,7 +118,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testImportGpxNoNamespace() = runTest {
+    fun testImportGpxNoNamespace() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val gpx = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -140,7 +140,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testImportGpxMultipleTracks() = runTest {
+    fun testImportGpxMultipleTracks() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val gpx = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -161,7 +161,7 @@ class TrackRepositoryTest {
         assertEquals("Track 1", track.name, "Should pick the first track")
     }
     @Test
-    fun testImportInvalidGeoJson() = runTest {
+    fun testImportInvalidGeoJson() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val invalidGeoJson = "{ \"type\": \"FeatureCollection\", \"features\": [] }"
         val track = repository.importTrack(invalidGeoJson, "geojson")
@@ -169,7 +169,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testImportMalformedGeoJson() = runTest {
+    fun testImportMalformedGeoJson() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val malformedGeoJson = "{ \"type\": \"FeatureCollection\", \"features\": " // missing closing brackets
         val track = repository.importTrack(malformedGeoJson, "geojson")
@@ -177,7 +177,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testImportInvalidGpx() = runTest {
+    fun testImportInvalidGpx() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val invalidGpx = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -189,7 +189,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testImportMalformedGpx() = runTest {
+    fun testImportMalformedGpx() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val malformedGpx = "<gpx><trk><name>Test" // missing closing tags
         val track = repository.importTrack(malformedGpx, "gpx")
@@ -197,7 +197,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testUpdateTrackVisibility() = runTest {
+    fun testUpdateTrackVisibility() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val track = Track(id = "visible-test", name = "Visible Test", visible = true)
         repository.saveTrack(track)
@@ -209,7 +209,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testUpdateTrackStyle() = runTest {
+    fun testUpdateTrackStyle() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val track = Track(id = "style-test", name = "Style Test", color = "#0000FF", lineStyle = LineStyle.SOLID)
         repository.saveTrack(track)
@@ -222,7 +222,7 @@ class TrackRepositoryTest {
     }
 
     @Test
-    fun testDeleteTrack() = runTest {
+    fun testDeleteTrack() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val track = Track(id = "delete-test", name = "Delete Test")
         repository.saveTrack(track)

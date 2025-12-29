@@ -16,8 +16,7 @@ class ConfigRepositoryTest {
             database = MapViewerDB(createInMemoryDriver())
             repository = ConfigRepository(database)
         } catch (e: Exception) {
-            // Skip tests if driver creation fails (e.g. on Android target in unit tests)
-            // Ideally we should use @Ignore but we want it to work on other platforms
+            // Skip
         }
     }
 

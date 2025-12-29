@@ -25,7 +25,7 @@ class MapScreenModel(
     val activeTracks = mutableStateListOf<Track>()
 
     init {
-        refreshTracks()
+        // We will call refreshTracks() explicitly when needed to avoid double refresh or init issues
     }
 
     fun refreshTracks() {

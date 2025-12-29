@@ -23,6 +23,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - Use `commonMain` as much as possible for logic.
 - Platform-specific code should be in `androidMain`, `iosMain`, `jvmMain`, etc., using expect/actual.
 - **All future functionality MUST come with corresponding tests.**
+- **Use `runTest` with explicit timeouts (e.g., 10s) for tests that use coroutines or database operations to prevent emulator stalls.**
 - Keep `agent.md` updated with progress and important architectural decisions.
 - **Ask questions whenever something is unclear.**
 
@@ -49,6 +50,9 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - [x] Implement GPX/GeoJSON Import/Export.
 - [x] Fix Android serialization crashes using Voyager ScreenModel.
 - [x] Implement comprehensive test suite (Unit, Integration, and logic-based UI tests).
+- [x] Resolve all failing tests across JVM, Android, iOS, and Web.
+- [x] Implement multi-select and bulk editing for tracks.
+- [x] Address test stalls on Android emulators by adding timeouts and safety checks in UI tests.
 - [ ] Implement Raster Overlays.
 
 ## Future Roadmap

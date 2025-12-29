@@ -17,7 +17,7 @@ import kotlin.test.assertNotNull
 @Config(sdk = [34])
 class LocationProviderAndroidTest {
     @Test
-    fun testGetLocations() = runTest {
+    fun testGetLocations() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val provider = LocationProvider(context)
         
