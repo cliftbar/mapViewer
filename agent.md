@@ -22,6 +22,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - Follow KMP best practices.
 - Use `commonMain` as much as possible for logic.
 - Platform-specific code should be in `androidMain`, `iosMain`, `jvmMain`, etc., using expect/actual.
+- **All future functionality MUST come with corresponding tests.**
 - Keep `agent.md` updated with progress and important architectural decisions.
 - **Ask questions whenever something is unclear.**
 
@@ -45,7 +46,9 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - [ ] Implement iOS Location Provider.
 - [ ] Implement Offline Map Support (SQLDelight/FileSystem tile caching).
 - [ ] Implement Track Recording and GPX storage.
-- [ ] Implement GPX/GeoJSON Import/Export.
+- [x] Implement GPX/GeoJSON Import/Export.
+- [x] Fix Android serialization crashes using Voyager ScreenModel.
+- [x] Implement comprehensive test suite (Unit, Integration, and logic-based UI tests).
 - [ ] Implement Raster Overlays.
 
 ## Future Roadmap
@@ -86,5 +89,5 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 4.  **Dark Theme**: Added support for dark/light themes and macOS title bar synchronization. [x]
 
 #### Phase 4: Validation & Testing
-1.  **Unit Tests**: TBD [ ]
-2.  **Platform Testing**: TBD [ ]
+1.  **Unit Tests**: Implemented comprehensive suite for common logic and view models. [x]
+2.  **Platform Testing**: Basic platform-specific integration tests implemented. [x]

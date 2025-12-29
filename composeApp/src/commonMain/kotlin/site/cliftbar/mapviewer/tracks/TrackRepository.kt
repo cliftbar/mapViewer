@@ -3,14 +3,16 @@ package site.cliftbar.mapviewer.tracks
 import site.cliftbar.mapviewer.MapViewerDB
 import site.cliftbar.mapviewer.Track_points
 import site.cliftbar.mapviewer.Tracks
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 class TrackRepository(private val database: MapViewerDB) {
     private val queries = database.`1Queries`
 
-    fun getAllTracks(): List<Track> {
+    suspend fun getAllTracks(): List<Track> = withContext(Dispatchers.Default) {
         val trackEntities = queries.getAllTracks().executeAsList()
-        return trackEntities.map { entity ->
+        trackEntities.map { entity ->
             val points = queries.getTrackPoints(entity.id).executeAsList()
             val segments = points.groupBy { it.segment_index }
                 .map { (_, segmentPoints) ->
@@ -36,9 +38,9 @@ class TrackRepository(private val database: MapViewerDB) {
         }
     }
 
-    fun getVisibleTracks(): List<Track> {
+    suspend fun getVisibleTracks(): List<Track> = withContext(Dispatchers.Default) {
         val trackEntities = queries.getVisibleTracks().executeAsList()
-        return trackEntities.map { entity ->
+        trackEntities.map { entity ->
             val points = queries.getTrackPoints(entity.id).executeAsList()
             val segments = points.groupBy { it.segment_index }
                 .map { (_, segmentPoints) ->
@@ -64,7 +66,7 @@ class TrackRepository(private val database: MapViewerDB) {
         }
     }
 
-    fun saveTrack(track: Track): String {
+    suspend fun saveTrack(track: Track): String = withContext(Dispatchers.Default) {
         val id = if (track.id.isBlank()) Random.nextLong().toString() else track.id
         queries.transaction {
             queries.insertTrack(
@@ -77,41 +79,53 @@ class TrackRepository(private val database: MapViewerDB) {
             queries.deleteAllPoints(id)
             track.segments.forEachIndexed { segmentIndex, segment ->
                 segment.points.forEach { point ->
-                    queries.insertPoint(
-                        track_id = id,
-                        segment_index = segmentIndex.toLong(),
-                        latitude = point.latitude,
-                        longitude = point.longitude,
-                        elevation = point.elevation,
-                        time = point.time
-                    )
+                    try {
+                        queries.insertPoint(
+                            track_id = id,
+                            segment_index = segmentIndex.toLong(),
+                            latitude = point.latitude,
+                            longitude = point.longitude,
+                            elevation = point.elevation,
+                            time = point.time
+                        )
+                    } catch (e: Exception) {
+                        println("[DEBUG_LOG] Error inserting point for track $id: ${e.message}")
+                    }
                 }
             }
         }
-        return id
+        id
     }
 
-    fun updateTrackVisibility(id: String, visible: Boolean) {
+    suspend fun updateTrackVisibility(id: String, visible: Boolean) = withContext(Dispatchers.Default) {
         queries.updateTrackVisibility(if (visible) 1L else 0L, id)
     }
 
-    fun updateTrackStyle(id: String, color: String, lineStyle: LineStyle) {
+    suspend fun updateTrackStyle(id: String, color: String, lineStyle: LineStyle) = withContext(Dispatchers.Default) {
         queries.updateTrackStyle(color, lineStyle.name, id)
     }
 
-    fun deleteTrack(id: String) {
+    suspend fun deleteTrack(id: String) = withContext(Dispatchers.Default) {
         queries.deleteTrack(id)
     }
 
-    fun importTrack(content: String, format: String): Track? {
-        val track = when (format.lowercase()) {
-            "gpx" -> GpxParser.parse(content)
-            "geojson" -> GeoJsonParser.parse(content)
-            else -> null
-        } ?: return null
-        
-        val id = saveTrack(track)
-        return track.copy(id = id)
+    suspend fun importTrack(content: String, format: String): Track? {
+        try {
+            val track = withContext(Dispatchers.Default) {
+                when (format.lowercase()) {
+                    "gpx" -> GpxParser.parse(content)
+                    "geojson" -> GeoJsonParser.parse(content)
+                    else -> null
+                }
+            } ?: return null
+            
+            val id = saveTrack(track)
+            return track.copy(id = id)
+        } catch (e: Exception) {
+            println("[DEBUG_LOG] importTrack failed: ${e.message}")
+            e.printStackTrace()
+            return null
+        }
     }
 
     fun exportTrack(track: Track, format: String): String? {

@@ -55,3 +55,6 @@ node_modules/
 package-lock.json
 # Root yarn.lock is usually committed, but if the user wants it ignored they can add it back specifically.
 # However, KMP often uses kotlin-js-store for internal JS/Wasm dependencies.
+
+.output.txt
+*.output.txt

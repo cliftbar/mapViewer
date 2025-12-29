@@ -26,26 +26,32 @@ object GeoJsonParser {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun parse(content: String): Track? {
-        val geoJson = json.decodeFromString<GeoJson>(content)
-        val feature = geoJson.features.find { it.geometry.type == "LineString" || it.geometry.type == "MultiLineString" } ?: return null
-        
-        val name = feature.properties["name"]?.jsonPrimitive?.content ?: "Imported GeoJSON"
-        
-        val segments = mutableListOf<TrackSegment>()
-        
-        if (feature.geometry.type == "LineString") {
-            segments.add(parseLineString(feature.geometry.coordinates))
-        } else if (feature.geometry.type == "MultiLineString") {
-            feature.geometry.coordinates.forEach { 
-                segments.add(parseLineString(it.jsonArray))
+        return try {
+            val geoJson = json.decodeFromString<GeoJson>(content)
+            val feature = geoJson.features.find { it.geometry.type == "LineString" || it.geometry.type == "MultiLineString" } ?: return null
+            
+            val name = feature.properties["name"]?.jsonPrimitive?.content ?: "Imported GeoJSON"
+            
+            val segments = mutableListOf<TrackSegment>()
+            
+            if (feature.geometry.type == "LineString") {
+                segments.add(parseLineString(feature.geometry.coordinates))
+            } else if (feature.geometry.type == "MultiLineString") {
+                feature.geometry.coordinates.forEach { 
+                    segments.add(parseLineString(it.jsonArray))
+                }
             }
+            
+            Track(
+                id = "",
+                name = name,
+                segments = segments
+            )
+        } catch (e: Throwable) {
+            println("[DEBUG_LOG] GeoJSON Parse Error: ${e.message}")
+            e.printStackTrace()
+            null
         }
-        
-        return Track(
-            id = "",
-            name = name,
-            segments = segments
-        )
     }
 
     private fun parseLineString(coordinates: JsonArray): TrackSegment {

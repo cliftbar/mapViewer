@@ -14,9 +14,10 @@ import site.cliftbar.mapviewer.config.ConfigRepository
 import androidx.compose.foundation.clickable
 import site.cliftbar.mapviewer.config.AppTheme
 
-class SettingsScreen(
-    private val configRepository: ConfigRepository
-) : Tab {
+import cafe.adriel.voyager.core.model.rememberScreenModel
+import site.cliftbar.mapviewer.ui.viewmodels.SettingsScreenModel
+
+class SettingsScreen : Tab {
     override val options: TabOptions
         @Composable
         get() = remember {
@@ -28,7 +29,9 @@ class SettingsScreen(
 
     @Composable
     override fun Content() {
-        val config by configRepository.activeConfig.collectAsState()
+        val configRepository = site.cliftbar.mapviewer.LocalConfigRepository.current
+        val screenModel = rememberScreenModel { SettingsScreenModel(configRepository) }
+        val config by screenModel.activeConfig.collectAsState()
         var currentConfig by remember(config) { mutableStateOf(config) }
 
         Column(
@@ -81,7 +84,7 @@ class SettingsScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            Button(onClick = { configRepository.saveConfig(currentConfig) }) {
+            Button(onClick = { screenModel.saveConfig(currentConfig) }) {
                 Text("Save Configuration")
             }
 
@@ -90,11 +93,6 @@ class SettingsScreen(
             // Profile Management
             Text("Profiles", style = MaterialTheme.typography.titleMedium)
             
-            val profiles = remember { mutableStateListOf<String>() }
-            LaunchedEffect(Unit) {
-                profiles.addAll(configRepository.getAllProfiles())
-            }
-
             var newProfileName by remember { mutableStateOf("") }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextField(
@@ -106,10 +104,7 @@ class SettingsScreen(
                 Button(
                     onClick = {
                         if (newProfileName.isNotBlank()) {
-                            configRepository.saveConfig(currentConfig, newProfileName)
-                            if (!profiles.contains(newProfileName)) {
-                                profiles.add(newProfileName)
-                            }
+                            screenModel.saveConfig(currentConfig, newProfileName)
                             newProfileName = ""
                         }
                     },
@@ -121,7 +116,7 @@ class SettingsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            profiles.forEach { profile ->
+            screenModel.profiles.forEach { profile ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
@@ -129,13 +124,12 @@ class SettingsScreen(
                     Text(profile, modifier = Modifier.weight(1f))
                     if (profile != "config") {
                         TextButton(onClick = {
-                            configRepository.switchProfile(profile)
+                            screenModel.switchProfile(profile)
                         }) {
                             Text("Load")
                         }
                         IconButton(onClick = {
-                            configRepository.deleteProfile(profile)
-                            profiles.remove(profile)
+                            screenModel.deleteProfile(profile)
                         }) {
                             Text("X") // Use Icon later
                         }

@@ -7,6 +7,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import cafe.adriel.voyager.core.model.ScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
+import kotlinx.coroutines.launch
 import site.cliftbar.mapviewer.config.Config
 import site.cliftbar.mapviewer.config.ConfigRepository
 import site.cliftbar.mapviewer.map.MapLayer
@@ -27,8 +29,10 @@ class MapScreenModel(
     }
 
     fun refreshTracks() {
-        activeTracks.clear()
-        activeTracks.addAll(trackRepository.getVisibleTracks())
+        screenModelScope.launch {
+            activeTracks.clear()
+            activeTracks.addAll(trackRepository.getVisibleTracks())
+        }
     }
 
     private var _zoom by mutableStateOf(initialConfig.defaultZoom)

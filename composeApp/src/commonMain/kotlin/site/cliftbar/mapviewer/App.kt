@@ -37,25 +37,38 @@ fun App(
         AppTheme.DARK -> true
     }
 
-    MaterialTheme(
-        colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()
+    CompositionLocalProvider(
+        LocalConfigRepository provides configRepository,
+        LocalTrackRepository provides trackRepository
     ) {
-        TabNavigator(MapScreen(configRepository, trackRepository)) {
-            Scaffold(
-                bottomBar = {
-                    NavigationBar {
-                        TabNavigationItem(MapScreen(configRepository, trackRepository))
-                        TabNavigationItem(TrackManagementScreen(trackRepository))
-                        TabNavigationItem(SettingsScreen(configRepository))
+        MaterialTheme(
+            colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()
+        ) {
+            TabNavigator(MapScreen()) {
+                Scaffold(
+                    bottomBar = {
+                        NavigationBar {
+                            TabNavigationItem(MapScreen())
+                            TabNavigationItem(TrackManagementScreen())
+                            TabNavigationItem(SettingsScreen())
+                        }
                     }
-                }
-            ) { paddingValues ->
-                Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-                    CurrentTab()
+                ) { paddingValues ->
+                    Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+                        CurrentTab()
+                    }
                 }
             }
         }
     }
+}
+
+val LocalConfigRepository = staticCompositionLocalOf<ConfigRepository> {
+    error("No ConfigRepository provided")
+}
+
+val LocalTrackRepository = staticCompositionLocalOf<TrackRepository> {
+    error("No TrackRepository provided")
 }
 
 @Composable

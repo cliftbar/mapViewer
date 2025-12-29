@@ -72,6 +72,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(projects.shared)
             implementation(libs.sqldelight.coroutines)
+            implementation(libs.kotlinx.coroutines.core)
             implementation(compose.materialIconsExtended)
 
             implementation(libs.voyager.navigator)
@@ -91,11 +92,17 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
+            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+            implementation(compose.uiTest)
         }
         val androidUnitTest by getting {
             dependencies {
                 implementation(libs.sqldelight.desktop)
                 implementation(libs.robolectric)
+                implementation("androidx.test:core:1.6.1")
+                implementation(libs.kotlin.test)
             }
         }
         jvmMain.dependencies {
@@ -111,6 +118,23 @@ kotlin {
             implementation(libs.ktor.client.darwin)
             implementation(libs.yamlkt)
         }
+        iosMain.get().dependsOn(commonMain.get())
+
+        val iosX64Main by getting
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+        listOf(iosX64Main, iosArm64Main, iosSimulatorArm64Main).forEach {
+            it.dependsOn(iosMain.get())
+        }
+
+        val webMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+            }
+        }
+
+        jsMain.get().dependsOn(webMain)
+        wasmJsMain.get().dependsOn(webMain)
     }
 }
 

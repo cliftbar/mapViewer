@@ -5,7 +5,7 @@ import nl.adaptivity.xmlutil.serialization.*
 import kotlinx.datetime.Instant
 
 @Serializable
-@XmlSerialName("gpx", "http://www.topografix.com/GPX/1/1", "")
+@XmlSerialName("gpx", "", "")
 data class GpxData(
     @SerialName("version")
     val version: String = "1.1",
@@ -16,7 +16,7 @@ data class GpxData(
 )
 
 @Serializable
-@XmlSerialName("trk", "http://www.topografix.com/GPX/1/1", "")
+@XmlSerialName("trk", "", "")
 data class GpxTrack(
     @XmlElement(true)
     @SerialName("name")
@@ -26,14 +26,14 @@ data class GpxTrack(
 )
 
 @Serializable
-@XmlSerialName("trkseg", "http://www.topografix.com/GPX/1/1", "")
+@XmlSerialName("trkseg", "", "")
 data class GpxSegment(
     @SerialName("trkpt")
     val points: List<GpxPoint> = emptyList()
 )
 
 @Serializable
-@XmlSerialName("trkpt", "http://www.topografix.com/GPX/1/1", "")
+@XmlSerialName("trkpt", "", "")
 data class GpxPoint(
     @SerialName("lat")
     val lat: Double,
@@ -53,12 +53,22 @@ object GpxParser {
         defaultPolicy {
             ignoreUnknownChildren()
         }
+        repairNamespaces = true
     }
 
     fun parse(content: String): Track? {
+        // Pre-process content to remove namespaces if present, to be more robust
+        val cleanedContent = content.replace(Regex("xmlns(:[a-z]+)?=\"[^\"]+\""), "")
+            .replace(Regex("<[a-z]+:"), "<")
+            .replace(Regex("</[a-z]+:"), "</")
+
         return try {
-            val gpxData = xml.decodeFromString<GpxData>(content)
-            val gpxTrack = gpxData.tracks.firstOrNull() ?: return null
+            val gpxData = xml.decodeFromString<GpxData>(cleanedContent)
+            if (gpxData.tracks.isEmpty()) {
+                println("[DEBUG_LOG] GPX Parse Error: No tracks found in GPX data")
+                return null
+            }
+            val gpxTrack = gpxData.tracks.first()
             
             val segments = gpxTrack.segments.map { segment ->
                 TrackSegment(
@@ -85,7 +95,7 @@ object GpxParser {
                 name = gpxTrack.name ?: "Imported GPX",
                 segments = segments
             )
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             println("[DEBUG_LOG] GPX Parse Error: ${e.message}")
             e.printStackTrace()
             null

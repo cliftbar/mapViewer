@@ -25,11 +25,14 @@ import site.cliftbar.mapviewer.tracks.Track
 import site.cliftbar.mapviewer.tracks.TrackRepository
 import site.cliftbar.mapviewer.platform.rememberFilePicker
 import site.cliftbar.mapviewer.platform.rememberColorPicker
+import mapviewer.composeapp.generated.resources.Res
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 import kotlinx.coroutines.launch
 
-class TrackManagementScreen(
-    private val trackRepository: TrackRepository
-) : Tab {
+import cafe.adriel.voyager.core.model.rememberScreenModel
+import site.cliftbar.mapviewer.ui.viewmodels.TrackManagementScreenModel
+
+class TrackManagementScreen : Tab {
     override val options: TabOptions
         @Composable
         get() = remember {
@@ -39,17 +42,14 @@ class TrackManagementScreen(
             )
         }
 
+    @OptIn(ExperimentalResourceApi::class)
     @Composable
     override fun Content() {
-        val tracks = remember { mutableStateListOf<Track>() }
+        val trackRepository = site.cliftbar.mapviewer.LocalTrackRepository.current
+        val screenModel = rememberScreenModel { TrackManagementScreenModel(trackRepository) }
         val scope = rememberCoroutineScope()
         val filePicker = rememberFilePicker()
         var editingTrack by remember { mutableStateOf<Track?>(null) }
-
-        LaunchedEffect(Unit) {
-            tracks.clear()
-            tracks.addAll(trackRepository.getAllTracks())
-        }
 
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Text("Tracks", style = MaterialTheme.typography.headlineMedium)
@@ -59,10 +59,16 @@ class TrackManagementScreen(
             Row {
                 Button(onClick = {
                     scope.launch {
+                        println("[DEBUG_LOG] Pick GPX started")
                         val content = filePicker.pickFile(listOf("gpx"))
+                        println("[DEBUG_LOG] Pick GPX finished, content length: ${content?.length ?: "null"}")
                         content?.let {
-                            trackRepository.importTrack(it, "gpx")?.let { track ->
-                                tracks.add(track)
+                            try {
+                                val track = screenModel.importTrack(it, "gpx")
+                                println("[DEBUG_LOG] Import GPX result: ${track?.name ?: "null"}")
+                            } catch (e: Exception) {
+                                println("[DEBUG_LOG] Crash during GPX import: ${e.message}")
+                                e.printStackTrace()
                             }
                         }
                     }
@@ -74,10 +80,16 @@ class TrackManagementScreen(
                 
                 Button(onClick = {
                     scope.launch {
+                        println("[DEBUG_LOG] Pick GeoJSON started")
                         val content = filePicker.pickFile(listOf("json", "geojson"))
+                        println("[DEBUG_LOG] Pick GeoJSON finished, content length: ${content?.length ?: "null"}")
                         content?.let {
-                            trackRepository.importTrack(it, "geojson")?.let { track ->
-                                tracks.add(track)
+                            try {
+                                val track = screenModel.importTrack(it, "geojson")
+                                println("[DEBUG_LOG] Import GeoJSON result: ${track?.name ?: "null"}")
+                            } catch (e: Exception) {
+                                println("[DEBUG_LOG] Crash during GeoJSON import: ${e.message}")
+                                e.printStackTrace()
                             }
                         }
                     }
@@ -89,19 +101,15 @@ class TrackManagementScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
-                items(tracks) { track ->
+                items(screenModel.tracks) { track ->
                     TrackItem(
                         track = track,
                         onVisibilityChange = { visible ->
-                            trackRepository.updateTrackVisibility(track.id, visible)
-                            val index = tracks.indexOfFirst { it.id == track.id }
-                            if (index != -1) {
-                                tracks[index] = track.copy(visible = visible)
-                            }
+                            screenModel.updateTrackVisibility(track.id, visible)
                         },
                         onEdit = { editingTrack = track },
                         onExport = {
-                            val gpx = trackRepository.exportTrack(track, "gpx")
+                            val gpx = screenModel.exportTrack(track, "gpx")
                             gpx?.let {
                                 scope.launch {
                                     filePicker.saveFile("${track.name}.gpx", it)
@@ -109,8 +117,7 @@ class TrackManagementScreen(
                             }
                         },
                         onDelete = {
-                            trackRepository.deleteTrack(track.id)
-                            tracks.remove(track)
+                            screenModel.deleteTrack(track.id)
                         }
                     )
                 }
@@ -122,11 +129,7 @@ class TrackManagementScreen(
                 track = track,
                 onDismiss = { editingTrack = null },
                 onSave = { color, style ->
-                    trackRepository.updateTrackStyle(track.id, color, style)
-                    val index = tracks.indexOfFirst { it.id == track.id }
-                    if (index != -1) {
-                        tracks[index] = track.copy(color = color, lineStyle = style)
-                    }
+                    screenModel.updateTrackStyle(track.id, color, style)
                     editingTrack = null
                 }
             )

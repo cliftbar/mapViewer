@@ -22,10 +22,7 @@ import site.cliftbar.mapviewer.network.httpClient
 import site.cliftbar.mapviewer.ui.components.MapView
 import site.cliftbar.mapviewer.ui.viewmodels.MapScreenModel
 
-class MapScreen(
-    private val configRepository: ConfigRepository,
-    private val trackRepository: TrackRepository
-) : Tab {
+class MapScreen : Tab {
     override val options: TabOptions
         @Composable
         get() = remember {
@@ -37,8 +34,10 @@ class MapScreen(
 
     @Composable
     override fun Content() {
+        val configRepository = site.cliftbar.mapviewer.LocalConfigRepository.current
+        val trackRepository = site.cliftbar.mapviewer.LocalTrackRepository.current
+        val screenModel = rememberScreenModel { MapScreenModel(configRepository.loadConfig(), configRepository, trackRepository) }
         val config by configRepository.activeConfig.collectAsState()
-        val screenModel = rememberScreenModel { MapScreenModel(config, configRepository, trackRepository) }
         val tileProvider = remember { TileProvider(httpClient) }
         var showLayerMenu by remember { mutableStateOf(false) }
 
