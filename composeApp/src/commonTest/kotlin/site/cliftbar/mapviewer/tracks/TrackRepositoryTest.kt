@@ -232,4 +232,32 @@ class TrackRepositoryTest {
         val allTracks = repository.getAllTracks()
         assertTrue(allTracks.none { it.id == "delete-test" })
     }
+
+    @Test
+    fun testFolderOperations() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
+        if (!::repository.isInitialized) return@runTest
+        
+        val folderId = repository.createFolder("Test Folder", null)
+        assertNotNull(folderId)
+        
+        val track = Track(id = "folder-track", name = "Track in Folder")
+        repository.saveTrack(track)
+        
+        repository.addTracksToFolder(listOf("folder-track"), folderId)
+        
+        val hierarchy = repository.getFolderHierarchy()
+        val folder = hierarchy.find { it.id == folderId }
+        assertNotNull(folder)
+        assertEquals("Test Folder", folder.name)
+        assertTrue(folder.trackIds.contains("folder-track"))
+        
+        repository.removeTracksFromFolder(listOf("folder-track"), folderId)
+        val hierarchyAfterRemove = repository.getFolderHierarchy()
+        val folderAfterRemove = hierarchyAfterRemove.find { it.id == folderId }
+        assertFalse(folderAfterRemove?.trackIds?.contains("folder-track") ?: true)
+        
+        repository.deleteFolder(folderId)
+        val finalHierarchy = repository.getFolderHierarchy()
+        assertTrue(finalHierarchy.none { it.id == folderId })
+    }
 }

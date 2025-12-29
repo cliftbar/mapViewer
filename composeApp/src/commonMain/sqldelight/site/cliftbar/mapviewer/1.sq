@@ -62,3 +62,60 @@ UPDATE tracks SET visible = ? WHERE id = ?;
 
 updateTrackStyle:
 UPDATE tracks SET color = ?, line_style = ? WHERE id = ?;
+
+-- Folder table for hierarchical structure
+CREATE TABLE IF NOT EXISTS folders (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    parent_id TEXT, -- Null for root folders
+    FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE CASCADE
+);
+
+-- Mapping table for many-to-many relationship (Track can be in multiple folders)
+CREATE TABLE IF NOT EXISTS track_folder_map (
+    track_id TEXT NOT NULL,
+    folder_id TEXT NOT NULL,
+    PRIMARY KEY (track_id, folder_id),
+    FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE
+);
+
+insertFolder:
+INSERT OR REPLACE INTO folders(id, name, parent_id) VALUES (?, ?, ?);
+
+deleteFolder:
+DELETE FROM folders WHERE id = ?;
+
+addTrackToFolder:
+INSERT OR IGNORE INTO track_folder_map(track_id, folder_id) VALUES (?, ?);
+
+removeTrackFromFolder:
+DELETE FROM track_folder_map WHERE track_id = ? AND folder_id = ?;
+
+removeAllTracksFromFolder:
+DELETE FROM track_folder_map WHERE folder_id = ?;
+
+getTracksInFolder:
+SELECT t.* FROM tracks t
+JOIN track_folder_map m ON t.id = m.track_id
+WHERE m.folder_id = ?;
+
+getFoldersForTrack:
+SELECT f.* FROM folders f
+JOIN track_folder_map m ON f.id = m.folder_id
+WHERE m.track_id = ?;
+
+getAllFolders:
+SELECT * FROM folders;
+
+getSubFolders:
+SELECT * FROM folders WHERE parent_id = ?;
+
+getRootFolders:
+SELECT * FROM folders WHERE parent_id IS NULL;
+
+updateFolderName:
+UPDATE folders SET name = ? WHERE id = ?;
+
+updateFolderParent:
+UPDATE folders SET parent_id = ? WHERE id = ?;

@@ -24,6 +24,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - Platform-specific code should be in `androidMain`, `iosMain`, `jvmMain`, etc., using expect/actual.
 - **All future functionality MUST come with corresponding tests.**
 - **Use `runTest` with explicit timeouts (e.g., 10s) for tests that use coroutines or database operations to prevent emulator stalls.**
+- **For SQL files, make changes via migration (.sqm), not directly in schema (.sq) folders.**
 - Keep `agent.md` updated with progress and important architectural decisions.
 - **Ask questions whenever something is unclear.**
 

@@ -1,0 +1,15 @@
+-- migration to version 3
+CREATE TABLE IF NOT EXISTS folders (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    parent_id TEXT, -- Null for root folders
+    FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS track_folder_map (
+    track_id TEXT NOT NULL,
+    folder_id TEXT NOT NULL,
+    PRIMARY KEY (track_id, folder_id),
+    FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE
+);

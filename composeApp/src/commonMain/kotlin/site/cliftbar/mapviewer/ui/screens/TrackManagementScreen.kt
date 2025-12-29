@@ -14,12 +14,9 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
+import androidx.compose.foundation.lazy.LazyListScope
+import site.cliftbar.mapviewer.tracks.Folder
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import site.cliftbar.mapviewer.tracks.LineStyle
@@ -68,6 +65,32 @@ class TrackManagementScreen : Tab {
                 ) {
                     Text("${screenModel.selectedTrackIds.size} selected", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.weight(1f))
+                    
+                    var showFolderAssignment by remember { mutableStateOf(false) }
+
+                    IconButton(onClick = { showFolderAssignment = true }) {
+                        Icon(Icons.Default.CreateNewFolder, contentDescription = "Add to Folder")
+                    }
+
+                    if (showFolderAssignment) {
+                        FolderAssignmentDialog(
+                            folders = screenModel.folders,
+                            onDismiss = { showFolderAssignment = false },
+                            onAssign = { folderId ->
+                                screenModel.addSelectedTracksToFolder(folderId)
+                                showFolderAssignment = false
+                            },
+                            onCreateAndAssign = { name ->
+                                val repository = trackRepository
+                                scope.launch {
+                                    val newId = repository.createFolder(name, null)
+                                    screenModel.addSelectedTracksToFolder(newId)
+                                    showFolderAssignment = false
+                                }
+                            }
+                        )
+                    }
+
                     IconButton(onClick = { screenModel.updateSelectedTracksVisibility(true) }) {
                         Icon(Icons.Default.Visibility, contentDescription = "Make Visible")
                     }
@@ -128,7 +151,55 @@ class TrackManagementScreen : Tab {
             Spacer(modifier = Modifier.height(16.dp))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
-                items(screenModel.tracks) { track ->
+                fun LazyListScope.renderFolder(folder: Folder, level: Int = 0) {
+                    item(key = "folder-${folder.id}") {
+                        FolderItem(
+                            folder = folder,
+                            onDelete = { screenModel.deleteFolder(folder.id) },
+                            onRename = { /* TODO */ },
+                            onMove = { /* TODO */ },
+                            level = level
+                        )
+                    }
+                    
+                    // Tracks in this folder
+                    items(screenModel.tracks.filter { it.id in folder.trackIds }, key = { "track-${folder.id}-${it.id}" }) { track ->
+                        val isSelected = screenModel.selectedTrackIds[track.id] ?: false
+                        Row(modifier = Modifier.padding(start = ((level + 1) * 16).dp)) {
+                            TrackItem(
+                                track = track,
+                                isSelected = isSelected,
+                                onToggleSelection = { screenModel.toggleSelection(track.id) },
+                                onVisibilityChange = { visible -> screenModel.updateTrackVisibility(track.id, visible) },
+                                onEdit = { editingTrack = track },
+                                onExport = {
+                                    screenModel.exportTrack(track, "gpx") { result ->
+                                        result?.let { scope.launch { filePicker.saveFile("${track.name}.gpx", it) } }
+                                    }
+                                },
+                                onDelete = { screenModel.deleteTrack(track.id) }
+                            )
+                        }
+                    }
+
+                    folder.subFolders.forEach { subFolder ->
+                        renderFolder(subFolder, level + 1)
+                    }
+                }
+
+                screenModel.folders.forEach { folder ->
+                    renderFolder(folder)
+                }
+
+                item {
+                    Text(
+                        "All Tracks",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+
+                items(screenModel.tracks, key = { "track-root-${it.id}" }) { track ->
                     val isSelected = screenModel.selectedTrackIds[track.id] ?: false
                     TrackItem(
                         track = track,
@@ -139,10 +210,11 @@ class TrackManagementScreen : Tab {
                         },
                         onEdit = { editingTrack = track },
                         onExport = {
-                            val gpx = screenModel.exportTrack(track, "gpx")
-                            gpx?.let {
-                                scope.launch {
-                                    filePicker.saveFile("${track.name}.gpx", it)
+                            screenModel.exportTrack(track, "gpx") { result ->
+                                result?.let {
+                                    scope.launch {
+                                        filePicker.saveFile("${track.name}.gpx", it)
+                                    }
                                 }
                             }
                         },
@@ -164,6 +236,125 @@ class TrackManagementScreen : Tab {
                 }
             )
         }
+    }
+
+    @Composable
+    private fun FolderItem(
+        folder: Folder,
+        onDelete: () -> Unit,
+        onRename: (String) -> Unit,
+        onMove: (String?) -> Unit,
+        level: Int = 0
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .padding(start = (level * 16).dp)
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    if (expanded) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
+                    contentDescription = null
+                )
+                Icon(
+                    Icons.Default.Folder,
+                    contentDescription = null,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    folder.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                var showMenu by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Folder Actions")
+                    }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Rename") },
+                            onClick = { /* TODO */ showMenu = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            onClick = { onDelete(); showMenu = false }
+                        )
+                    }
+                }
+            }
+
+            if (expanded) {
+                folder.subFolders.forEach { subFolder ->
+                    FolderItem(
+                        folder = subFolder,
+                        onDelete = { /* TODO */ },
+                        onRename = { /* TODO */ },
+                        onMove = { /* TODO */ },
+                        level = level + 1
+                    )
+                }
+                
+                // Note: tracks in folders will be handled differently or we need to pass tracks here
+            }
+        }
+    }
+
+    @Composable
+    private fun FolderAssignmentDialog(
+        folders: List<Folder>,
+        onDismiss: () -> Unit,
+        onAssign: (String) -> Unit,
+        onCreateAndAssign: (String) -> Unit
+    ) {
+        var newFolderName by remember { mutableStateOf("") }
+        
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Add to Folder") },
+            text = {
+                Column {
+                    Text("Select an existing folder:")
+                    LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                        items(folders) { folder ->
+                            ListItem(
+                                headlineContent = { Text(folder.name) },
+                                modifier = Modifier.clickable { onAssign(folder.id) }
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text("Or create a new one:")
+                    TextField(
+                        value = newFolderName,
+                        onValueChange = { newFolderName = it },
+                        label = { Text("Folder Name") }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { if (newFolderName.isNotBlank()) onCreateAndAssign(newFolderName) },
+                    enabled = newFolderName.isNotBlank()
+                ) {
+                    Text("Create & Add")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     @Composable

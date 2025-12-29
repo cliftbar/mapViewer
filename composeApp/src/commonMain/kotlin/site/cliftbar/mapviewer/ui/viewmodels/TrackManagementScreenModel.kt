@@ -7,6 +7,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import site.cliftbar.mapviewer.tracks.Folder
 import site.cliftbar.mapviewer.tracks.LineStyle
 import site.cliftbar.mapviewer.tracks.Track
 import site.cliftbar.mapviewer.tracks.TrackRepository
@@ -15,6 +16,7 @@ class TrackManagementScreenModel(
     private val trackRepository: TrackRepository
 ) : ScreenModel {
     val tracks = mutableStateListOf<Track>()
+    val folders = mutableStateListOf<Folder>()
     val selectedTrackIds = mutableStateMapOf<String, Boolean>()
 
     init {
@@ -24,11 +26,36 @@ class TrackManagementScreenModel(
 
     fun refreshTracks() = screenModelScope.launch {
         val allTracks = trackRepository.getAllTracks()
+        val folderHierarchy = trackRepository.getFolderHierarchy()
         withContext(Dispatchers.Main) {
             tracks.clear()
             tracks.addAll(allTracks)
+            folders.clear()
+            folders.addAll(folderHierarchy)
             selectedTrackIds.clear()
         }
+    }
+
+    fun createFolder(name: String, parentId: String?) = screenModelScope.launch {
+        trackRepository.createFolder(name, parentId)
+        refreshTracks()
+    }
+
+    fun deleteFolder(id: String) = screenModelScope.launch {
+        trackRepository.deleteFolder(id)
+        refreshTracks()
+    }
+
+    fun addSelectedTracksToFolder(folderId: String) = screenModelScope.launch {
+        val idsToAdd = selectedTrackIds.keys.toList()
+        trackRepository.addTracksToFolder(idsToAdd, folderId)
+        refreshTracks()
+    }
+
+    fun removeSelectedTracksFromFolder(folderId: String) = screenModelScope.launch {
+        val idsToRemove = selectedTrackIds.keys.toList()
+        trackRepository.removeTracksFromFolder(idsToRemove, folderId)
+        refreshTracks()
     }
 
     suspend fun importTrack(content: String, format: String): Track? {
@@ -69,8 +96,13 @@ class TrackManagementScreenModel(
         }
     }
 
-    fun exportTrack(track: Track, format: String): String? {
-        return trackRepository.exportTrack(track, format)
+    fun exportTrack(track: Track, format: String, onResult: (String?) -> Unit) {
+        screenModelScope.launch {
+            val result = trackRepository.exportTrack(track, format)
+            withContext(Dispatchers.Main) {
+                onResult(result)
+            }
+        }
     }
 
     fun toggleSelection(id: String) {
