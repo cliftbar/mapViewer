@@ -54,7 +54,23 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - [x] Resolve all failing tests across JVM, Android, iOS, and Web.
 - [x] Implement multi-select and bulk editing for tracks (Visibility, Styling, Delete, Folder assignment).
 - [x] Address test stalls on Android emulators by adding timeouts and safety checks in UI tests.
+- [x] Implement SQLDelight asynchronous database operations for all platforms.
+- [x] Configure JS/WasmJS targets with WebWorkerDriver and proper Webpack bundling.
+- [x] Implement robust database migration recovery for Android, iOS, and JVM.
+- [x] Resolve GPX/GeoJSON parsing issues across all targets.
 - [ ] Implement Raster Overlays.
+
+## Major Lessons from Session
+
+- **SQLDelight Asynchronous Usage**: Enabling `generateAsync = true` in SQLDelight is mandatory when using asynchronous drivers like `WebWorkerDriver` (JS/WasmJS). This transforms all query extensions into `suspend` functions and requires manual schema management using `Schema.create(driver).await()` and `Schema.migrate(driver, ...)`.
+- **Web Worker Database Initialization**: Unlike native drivers, `WebWorkerDriver` does not automatically create tables on initialization. The application must explicitly call `Schema.create(driver).await()` during startup.
+- **Webpack 5 & Polyfills**: Using `sql.js` in a browser environment with Webpack 5 requires manual fallbacks for Node.js modules (`fs`, `path`, `crypto`) in the Webpack configuration (`resolve.fallback = { "fs": false, ... }`).
+- **WasmJS Interop Restrictions**: Kotlin/Wasm is strict about `js()` calls. They must be top-level functions or property initializers and consist of a single expression. This is critical for initializing browser features like `Worker`.
+- **Robust Database Migrations**: Platform-specific database migrations can fail or be interrupted. Implementing a "broken schema" check (e.g., verifying table existence even if the version matches) ensures the app can recover by re-running missing migration steps.
+- **Performance on Web**: Database operations on the Web target (via Web Workers) have higher overhead. Frequent state updates (e.g., saving map position during every drag pixel) must be debounced to prevent UI thread lag or freezing.
+- **XML/GPX Namespace Reliability**: Browser-based XML parsers (used by `xmlutil` on JS/Wasm) are sensitive to namespaces. Avoid regex-based "sanitization" of XML content; instead, explicitly define namespaces in `@Serializable` classes and let the serializer handle them.
+- **Android File Selection**: The Android system's identification of GPX/GeoJSON files can be inconsistent. Providing multiple MIME types (e.g., `application/gpx+xml`, `application/xml`, `text/xml`, `application/octet-stream`) in the file picker ensures better compatibility.
+- **JDK Modularity (JDK 17+)**: Build issues involving reflection on internal `java.base` classes (common in Gradle and Kotlin/JS plugins) require `--add-opens` flags in `gradle.properties`.
 
 ## Future Roadmap
 
