@@ -21,3 +21,8 @@ config.resolve.fallback = {
     "path": false,
     "crypto": false
 };
+
+// Suppress "Critical dependency: the request of a dependency is an expression"
+// which comes from sql.js dynamic loading
+if (!config.ignoreWarnings) config.ignoreWarnings = [];
+config.ignoreWarnings.push(/Critical dependency: the request of a dependency is an expression/);
