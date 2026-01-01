@@ -5,8 +5,10 @@ import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.runTest
 import site.cliftbar.mapviewer.MapViewerDB
 import site.cliftbar.mapviewer.config.Config
 import site.cliftbar.mapviewer.config.ConfigRepository
@@ -26,7 +28,7 @@ class MapScreenModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         try {
             Dispatchers.setMain(testDispatcher)
             database = MapViewerDB(createInMemoryDriver())
@@ -46,8 +48,8 @@ class MapScreenModelTest {
     }
 
     @Test
-    fun testInitialState() {
-        if (!::database.isInitialized) return
+    fun testInitialState() = runTest {
+        if (!::database.isInitialized) return@runTest
         val initialConfig = Config(defaultZoom = 10, initialLat = 45.0, initialLon = -122.0)
         val model = MapScreenModel(initialConfig, configRepository, trackRepository)
         
@@ -56,27 +58,29 @@ class MapScreenModelTest {
     }
 
     @Test
-    fun testZoomPersistence() {
-        if (!::database.isInitialized) return
+    fun testZoomPersistence() = runTest {
+        if (!::database.isInitialized) return@runTest
         val initialConfig = Config(defaultZoom = 10)
         val model = MapScreenModel(initialConfig, configRepository, trackRepository)
         model.viewSize = IntSize(1000, 1000)
         
         model.zoom = 12
+        advanceUntilIdle()
         
         val savedConfig = configRepository.activeConfig.value
         assertEquals(12, savedConfig.defaultZoom)
     }
 
     @Test
-    fun testCenterOffsetPersistence() {
-        if (!::database.isInitialized) return
+    fun testCenterOffsetPersistence() = runTest {
+        if (!::database.isInitialized) return@runTest
         val initialConfig = Config(defaultZoom = 10, initialLat = 45.0, initialLon = -122.0)
         val model = MapScreenModel(initialConfig, configRepository, trackRepository)
         model.viewSize = IntSize(1000, 1000)
         
         // Move by 256 pixels (1 tile)
         model.centerOffset = Offset(256f, 256f)
+        advanceUntilIdle()
         
         val savedConfig = configRepository.activeConfig.value
         assertNotEquals(45.0, savedConfig.initialLat)

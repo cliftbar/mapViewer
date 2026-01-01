@@ -17,6 +17,7 @@ sqldelight {
     databases {
         register("MapViewerDB") {
             packageName.set("site.cliftbar.mapviewer")
+            generateAsync.set(true)
         }
     }
 }
@@ -42,7 +43,45 @@ kotlin {
     jvm()
 
     js {
-        browser()
+        browser {
+            commonWebpackConfig {
+                devServer = (devServer ?: org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig.DevServer()).apply {
+                    static = (static ?: mutableListOf()).apply {
+                        add(project.projectDir.path + "/src/webMain/resources")
+                    }
+                }
+            }
+            val webpackConfigPath = project.projectDir.path + "/webpack.config.d/sqljs-fix.js"
+            project.mkdir(project.projectDir.path + "/webpack.config.d")
+            val webpackConfig = project.file(webpackConfigPath)
+            if (!webpackConfig.exists()) {
+                webpackConfig.writeText("""
+                    const CopyWebpackPlugin = require('copy-webpack-plugin');
+                    const path = require('path');
+
+                    config.plugins.push(
+                        new CopyWebpackPlugin({
+                            patterns: [
+                                {
+                                    from: path.resolve(__dirname, '../../node_modules/sql.js/dist/sql-wasm.wasm'),
+                                    to: 'sql-wasm.wasm'
+                                },
+                                {
+                                    from: path.resolve(__dirname, '../../node_modules/sql.js/dist/sql-wasm.wasm'),
+                                    to: 'sqljs.worker.js/sql-wasm.wasm'
+                                }
+                            ]
+                        })
+                    );
+
+                    config.resolve.fallback = {
+                        "fs": false,
+                        "path": false,
+                        "crypto": false
+                    };
+                """.trimIndent())
+            }
+        }
         binaries.executable()
     }
 
@@ -130,7 +169,18 @@ kotlin {
         val webMain by creating {
             dependsOn(commonMain.get())
             dependencies {
+                implementation(libs.sqldelight.web)
+                implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.2.1"))
+                implementation(npm("sql.js", "1.12.0"))
+                implementation(devNpm("copy-webpack-plugin", "11.0.0"))
             }
+        }
+
+        jsMain.dependencies {
+            implementation(libs.sqldelight.web)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.sqldelight.web)
         }
 
         jsMain.get().dependsOn(webMain)

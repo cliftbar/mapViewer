@@ -16,7 +16,7 @@ class SettingsScreenModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         try {
             Dispatchers.setMain(testDispatcher)
             database = MapViewerDB(createInMemoryDriver())

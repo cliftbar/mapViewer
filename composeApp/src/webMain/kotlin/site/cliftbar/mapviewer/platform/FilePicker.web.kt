@@ -17,17 +17,18 @@ import kotlin.js.ExperimentalWasmJsInterop
 actual fun rememberFilePicker(): FilePicker = remember { WebFilePicker() }
 
 @OptIn(ExperimentalWasmJsInterop::class)
-@JsFun("(blob) => (URL.createObjectURL(blob))")
+@JsFun("function(blob) { return URL.createObjectURL(blob); }")
 external fun createObjectURL(blob: Blob): String
 
 @OptIn(ExperimentalWasmJsInterop::class)
-@JsFun("(url) => (URL.revokeObjectURL(url))")
+@JsFun("function(url) { URL.revokeObjectURL(url); }")
 external fun revokeObjectURL(url: String): Unit
 
 @OptIn(ExperimentalWasmJsInterop::class)
-@JsFun("(content) => (new Blob([content]))")
+@JsFun("function(content) { return new Blob([content]); }")
 external fun createBlob(content: String): Blob
 
+@OptIn(ExperimentalWasmJsInterop::class)
 class WebFilePicker : FilePicker {
     override suspend fun pickFile(extensions: List<String>): String? {
         val deferred = CompletableDeferred<String?>()

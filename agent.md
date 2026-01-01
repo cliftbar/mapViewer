@@ -52,7 +52,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - [x] Fix Android serialization crashes using Voyager ScreenModel.
 - [x] Implement comprehensive test suite (Unit, Integration, and logic-based UI tests).
 - [x] Resolve all failing tests across JVM, Android, iOS, and Web.
-- [x] Implement multi-select and bulk editing for tracks.
+- [x] Implement multi-select and bulk editing for tracks (Visibility, Styling, Delete, Folder assignment).
 - [x] Address test stalls on Android emulators by adding timeouts and safety checks in UI tests.
 - [ ] Implement Raster Overlays.
 

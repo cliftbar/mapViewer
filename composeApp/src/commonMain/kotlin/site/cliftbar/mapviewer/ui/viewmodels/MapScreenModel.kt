@@ -8,6 +8,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import site.cliftbar.mapviewer.config.Config
 import site.cliftbar.mapviewer.config.ConfigRepository
@@ -24,17 +28,6 @@ class MapScreenModel(
 
     val activeTracks = mutableStateListOf<Track>()
 
-    init {
-        // We will call refreshTracks() explicitly when needed to avoid double refresh or init issues
-    }
-
-    fun refreshTracks() {
-        screenModelScope.launch {
-            activeTracks.clear()
-            activeTracks.addAll(trackRepository.getVisibleTracks())
-        }
-    }
-
     private var _zoom by mutableStateOf(initialConfig.defaultZoom)
     var zoom: Int
         get() = _zoom
@@ -50,6 +43,7 @@ class MapScreenModel(
             _centerOffset = value
             saveState()
         }
+
     var initialized by mutableStateOf(false)
     private var _viewSize by mutableStateOf(IntSize.Zero)
     var viewSize: IntSize
@@ -60,6 +54,7 @@ class MapScreenModel(
                 saveState()
             }
         }
+
     val activeLayers = mutableStateListOf<MapLayer>().apply {
         // Find base map
         val baseMap = MapLayer.allLayers.find { it.id == initialConfig.activeBaseMapId } ?: MapLayer.OpenStreetMap
@@ -70,29 +65,62 @@ class MapScreenModel(
         }
     }
 
+    init {
+        // We will call refreshTracks() explicitly when needed to avoid double refresh or init issues
+        screenModelScope.launch {
+            // Wait for non-default config if possible, or just update when it arrives
+            configRepository.activeConfig.collect { config ->
+                if (!initialized) {
+                    _config = config
+                    _zoom = config.defaultZoom
+                    // Re-initialize activeLayers from new config if not yet modified by user
+                    activeLayers.clear()
+                    val baseMap = MapLayer.allLayers.find { it.id == config.activeBaseMapId } ?: MapLayer.OpenStreetMap
+                    activeLayers.add(baseMap)
+                    config.activeOverlayIds.forEach { id ->
+                        MapLayer.allLayers.find { it.id == id }?.let { activeLayers.add(it) }
+                    }
+                }
+            }
+        }
+    }
+
+    fun refreshTracks() {
+        screenModelScope.launch {
+            activeTracks.clear()
+            activeTracks.addAll(trackRepository.getVisibleTracks())
+        }
+    }
+
     fun updateActiveLayers() {
         saveState()
     }
 
+    private var saveJob: Job? = null
+
     private fun saveState() {
         if (viewSize.width <= 0 || viewSize.height <= 0) return
 
-        val baseMapId = activeLayers.find { !it.isOverlay }?.id ?: "osm"
-        val overlayIds = activeLayers.filter { it.isOverlay }.map { it.id }
+        saveJob?.cancel()
+        saveJob = screenModelScope.launch {
+            delay(500) // Debounce 500ms
+            val baseMapId = activeLayers.find { !it.isOverlay }?.id ?: "osm"
+            val overlayIds = activeLayers.filter { it.isOverlay }.map { it.id }
 
-        // Convert current offset to lat/lon for persistence
-        val centerX = (viewSize.width / 2f - centerOffset.x) / 256.0
-        val centerY = (viewSize.height / 2f - centerOffset.y) / 256.0
-        val lat = site.cliftbar.mapviewer.ui.components.tileYToLat(centerY, zoom)
-        val lon = site.cliftbar.mapviewer.ui.components.tileXToLon(centerX, zoom)
-        
-        _config = _config.copy(
-            defaultZoom = zoom,
-            initialLat = lat,
-            initialLon = lon,
-            activeBaseMapId = baseMapId,
-            activeOverlayIds = overlayIds
-        )
-        configRepository.saveConfig(_config)
+            // Convert current offset to lat/lon for persistence
+            val centerX = (viewSize.width / 2f - centerOffset.x) / 256.0
+            val centerY = (viewSize.height / 2f - centerOffset.y) / 256.0
+            val lat = site.cliftbar.mapviewer.ui.components.tileYToLat(centerY, zoom)
+            val lon = site.cliftbar.mapviewer.ui.components.tileXToLon(centerX, zoom)
+            
+            _config = _config.copy(
+                defaultZoom = zoom,
+                initialLat = lat,
+                initialLon = lon,
+                activeBaseMapId = baseMapId,
+                activeOverlayIds = overlayIds
+            )
+            configRepository.saveConfig(_config)
+        }
     }
 }

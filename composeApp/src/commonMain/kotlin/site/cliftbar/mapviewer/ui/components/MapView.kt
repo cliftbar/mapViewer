@@ -20,6 +20,7 @@ import site.cliftbar.mapviewer.map.TileProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.onSizeChanged
 import site.cliftbar.mapviewer.tracks.LineStyle
 import site.cliftbar.mapviewer.tracks.Track
 import kotlin.math.*
@@ -91,6 +92,11 @@ fun MapView(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
+                .onSizeChanged { newSize ->
+                    if (newSize != viewSize && newSize.width > 0 && newSize.height > 0) {
+                        onViewSizeChange(newSize)
+                    }
+                }
                 .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()
@@ -101,12 +107,6 @@ fun MapView(
             val width = size.width
             val height = size.height
             
-            // Only update viewSize if it actually changed to avoid infinite save loops
-            val newSize = IntSize(width.toInt(), height.toInt())
-            if (newSize != viewSize) {
-                onViewSizeChange(newSize)
-            }
-
             if (!initialized && width > 0 && height > 0) {
                 val tileX = latLonToTileX(initialLon, zoom)
                 val tileY = latLonToTileY(initialLat, zoom)

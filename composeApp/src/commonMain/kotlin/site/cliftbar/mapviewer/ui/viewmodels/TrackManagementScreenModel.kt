@@ -58,14 +58,14 @@ class TrackManagementScreenModel(
         refreshTracks()
     }
 
-    suspend fun importTrack(content: String, format: String): Track? {
-        val track = trackRepository.importTrack(content, format)
-        if (track != null) {
+    suspend fun importTrack(content: String, format: String): List<Track> {
+        val importedTracks = trackRepository.importTrack(content, format)
+        if (importedTracks.isNotEmpty()) {
             withContext(Dispatchers.Main) {
-                tracks.add(track)
+                tracks.addAll(importedTracks)
             }
         }
-        return track
+        return importedTracks
     }
 
     fun updateTrackVisibility(id: String, visible: Boolean) = screenModelScope.launch {
@@ -144,6 +144,20 @@ class TrackManagementScreenModel(
             tracks.forEachIndexed { index, track ->
                 if (track.id in idsToUpdate) {
                     tracks[index] = track.copy(visible = visible)
+                }
+            }
+        }
+    }
+
+    fun updateSelectedTracksStyle(color: String, style: LineStyle) = screenModelScope.launch {
+        val idsToUpdate = selectedTrackIds.keys.toList()
+        idsToUpdate.forEach { id ->
+            trackRepository.updateTrackStyle(id, color, style)
+        }
+        withContext(Dispatchers.Main) {
+            tracks.forEachIndexed { index, track ->
+                if (track.id in idsToUpdate) {
+                    tracks[index] = track.copy(color = color, lineStyle = style)
                 }
             }
         }

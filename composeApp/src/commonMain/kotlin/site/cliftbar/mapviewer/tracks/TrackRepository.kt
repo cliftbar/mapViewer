@@ -3,6 +3,9 @@ package site.cliftbar.mapviewer.tracks
 import site.cliftbar.mapviewer.MapViewerDB
 import site.cliftbar.mapviewer.Track_points
 import site.cliftbar.mapviewer.Tracks
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
@@ -11,9 +14,9 @@ class TrackRepository(private val database: MapViewerDB) {
     private val queries = database.`1Queries`
 
     suspend fun getAllTracks(): List<Track> = withContext(Dispatchers.Default) {
-        val trackEntities = queries.getAllTracks().executeAsList()
+        val trackEntities = queries.getAllTracks().awaitAsList()
         trackEntities.map { entity ->
-            val points = queries.getTrackPoints(entity.id).executeAsList()
+            val points = queries.getTrackPoints(entity.id).awaitAsList()
             val segments = points.groupBy { it.segment_index }
                 .map { (_, segmentPoints) ->
                     TrackSegment(
@@ -39,9 +42,9 @@ class TrackRepository(private val database: MapViewerDB) {
     }
 
     suspend fun getVisibleTracks(): List<Track> = withContext(Dispatchers.Default) {
-        val trackEntities = queries.getVisibleTracks().executeAsList()
+        val trackEntities = queries.getVisibleTracks().awaitAsList()
         trackEntities.map { entity ->
-            val points = queries.getTrackPoints(entity.id).executeAsList()
+            val points = queries.getTrackPoints(entity.id).awaitAsList()
             val segments = points.groupBy { it.segment_index }
                 .map { (_, segmentPoints) ->
                     TrackSegment(
@@ -68,7 +71,7 @@ class TrackRepository(private val database: MapViewerDB) {
 
     suspend fun saveTrack(track: Track): String = withContext(Dispatchers.Default) {
         val id = if (track.id.isBlank()) Random.nextLong().toString() else track.id
-        queries.transaction {
+        database.transactionWithResult {
             queries.insertTrack(
                 id = id,
                 name = track.name,
@@ -93,8 +96,8 @@ class TrackRepository(private val database: MapViewerDB) {
                     }
                 }
             }
+            id
         }
-        id
     }
 
     suspend fun updateTrackVisibility(id: String, visible: Boolean) = withContext(Dispatchers.Default) {
@@ -106,25 +109,30 @@ class TrackRepository(private val database: MapViewerDB) {
     }
 
     suspend fun deleteTrack(id: String) = withContext(Dispatchers.Default) {
-        queries.deleteTrack(id)
+        database.transaction {
+            queries.deleteAllPoints(id)
+            queries.deleteTrack(id)
+        }
     }
 
-    suspend fun importTrack(content: String, format: String): Track? {
+    suspend fun importTrack(content: String, format: String): List<Track> {
         try {
-            val track = withContext(Dispatchers.Default) {
+            val tracks = withContext(Dispatchers.Default) {
                 when (format.lowercase()) {
                     "gpx" -> GpxParser.parse(content)
                     "geojson" -> GeoJsonParser.parse(content)
-                    else -> null
+                    else -> emptyList()
                 }
-            } ?: return null
+            }
             
-            val id = saveTrack(track)
-            return track.copy(id = id)
+            return tracks.map { track ->
+                val id = saveTrack(track)
+                track.copy(id = id)
+            }
         } catch (e: Exception) {
             println("[DEBUG_LOG] importTrack failed: ${e.message}")
             e.printStackTrace()
-            return null
+            return emptyList()
         }
     }
 
@@ -157,7 +165,7 @@ class TrackRepository(private val database: MapViewerDB) {
     }
 
     suspend fun addTracksToFolder(trackIds: List<String>, folderId: String) = withContext(Dispatchers.Default) {
-        queries.transaction {
+        database.transaction {
             trackIds.forEach { trackId ->
                 queries.addTrackToFolder(trackId, folderId)
             }
@@ -165,7 +173,7 @@ class TrackRepository(private val database: MapViewerDB) {
     }
 
     suspend fun removeTracksFromFolder(trackIds: List<String>, folderId: String) = withContext(Dispatchers.Default) {
-        queries.transaction {
+        database.transaction {
             trackIds.forEach { trackId ->
                 queries.removeTrackFromFolder(trackId, folderId)
             }
@@ -173,9 +181,9 @@ class TrackRepository(private val database: MapViewerDB) {
     }
 
     suspend fun getFolderHierarchy(): List<Folder> = withContext(Dispatchers.Default) {
-        val allFolders = queries.getAllFolders().executeAsList()
-        val allTracksInFolders = queries.getAllFolders().executeAsList().associate { folder ->
-            folder.id to queries.getTracksInFolder(folder.id).executeAsList().map { it.id }
+        val allFolders = queries.getAllFolders().awaitAsList()
+        val allTracksInFolders = allFolders.associate { folder ->
+            folder.id to queries.getTracksInFolder(folder.id).awaitAsList().map { it.id }
         }
 
         fun buildTree(parentId: String?): List<Folder> {
@@ -194,7 +202,7 @@ class TrackRepository(private val database: MapViewerDB) {
     }
 
     suspend fun getFoldersForTrack(trackId: String): List<Folder> = withContext(Dispatchers.Default) {
-        queries.getFoldersForTrack(trackId).executeAsList().map { entity ->
+        queries.getFoldersForTrack(trackId).awaitAsList().map { entity ->
             Folder(
                 id = entity.id,
                 name = entity.name,

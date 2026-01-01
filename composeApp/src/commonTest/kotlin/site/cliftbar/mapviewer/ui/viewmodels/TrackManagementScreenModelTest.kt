@@ -19,7 +19,7 @@ class TrackManagementScreenModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         Dispatchers.setMain(testDispatcher)
         try {
             database = MapViewerDB(createInMemoryDriver())
@@ -56,15 +56,17 @@ class TrackManagementScreenModelTest {
         val gpx = """
             <?xml version="1.0" encoding="UTF-8"?>
             <gpx version="1.1" creator="Test">
-              <trk><name>Imported</name><trkseg></trkseg></trk>
+              <trk><name>Track 1</name><trkseg></trkseg></trk>
+              <trk><name>Track 2</name><trkseg></trkseg></trk>
             </gpx>
         """.trimIndent()
         
         model.importTrack(gpx, "gpx")
         advanceUntilIdle()
         
-        assertEquals(1, model.tracks.size)
-        assertEquals("Imported", model.tracks[0].name)
+        assertEquals(2, model.tracks.size)
+        assertEquals("Track 1", model.tracks[0].name)
+        assertEquals("Track 2", model.tracks[1].name)
     }
 
     @Test
@@ -192,5 +194,34 @@ class TrackManagementScreenModelTest {
         
         val stored = trackRepository.getAllTracks()
         assertTrue(stored.none { it.visible })
+    }
+
+    @Test
+    fun testBulkStyleUpdate() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
+        if (!::trackRepository.isInitialized) return@runTest
+        val t1 = Track(id = "1", name = "T1", color = "#0000FF", lineStyle = LineStyle.SOLID)
+        val t2 = Track(id = "2", name = "T2", color = "#0000FF", lineStyle = LineStyle.SOLID)
+        trackRepository.saveTrack(t1)
+        trackRepository.saveTrack(t2)
+        
+        val model = TrackManagementScreenModel(trackRepository)
+        val job = model.refreshTracks()
+        if (job is Job) job.join()
+        advanceUntilIdle()
+        
+        model.toggleSelection("1")
+        model.toggleSelection("2")
+        
+        val updateJob = model.updateSelectedTracksStyle("#FF0000", LineStyle.DASHED)
+        if (updateJob is Job) updateJob.join()
+        advanceUntilIdle()
+        
+        assertEquals("#FF0000", model.tracks[0].color)
+        assertEquals(LineStyle.DASHED, model.tracks[0].lineStyle)
+        assertEquals("#FF0000", model.tracks[1].color)
+        assertEquals(LineStyle.DASHED, model.tracks[1].lineStyle)
+        
+        val stored = trackRepository.getAllTracks()
+        assertTrue(stored.all { it.color == "#FF0000" && it.lineStyle == LineStyle.DASHED })
     }
 }

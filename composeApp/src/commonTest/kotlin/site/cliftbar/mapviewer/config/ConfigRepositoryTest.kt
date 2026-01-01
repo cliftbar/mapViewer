@@ -2,6 +2,7 @@ package site.cliftbar.mapviewer.config
 
 import site.cliftbar.mapviewer.MapViewerDB
 import site.cliftbar.mapviewer.db.createInMemoryDriver
+import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
 // Simple way to avoid running on Android for now as it's logic-only and Android target in unit tests is tricky with SQLDelight
@@ -11,7 +12,7 @@ class ConfigRepositoryTest {
     private lateinit var repository: ConfigRepository
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         try {
             database = MapViewerDB(createInMemoryDriver())
             repository = ConfigRepository(database)
@@ -21,15 +22,15 @@ class ConfigRepositoryTest {
     }
 
     @Test
-    fun testDefaultConfigLoad() {
-        if (!::repository.isInitialized) return
+    fun testDefaultConfigLoad() = runTest {
+        if (!::repository.isInitialized) return@runTest
         val config = repository.loadConfig()
         assertEquals(12, config.defaultZoom)
     }
 
     @Test
-    fun testSaveAndLoadProfile() {
-        if (!::repository.isInitialized) return
+    fun testSaveAndLoadProfile() = runTest {
+        if (!::repository.isInitialized) return@runTest
         val customConfig = Config(defaultZoom = 15)
         repository.saveConfig(customConfig, "hiking")
         
@@ -42,8 +43,8 @@ class ConfigRepositoryTest {
     }
 
     @Test
-    fun testGetAllProfiles() {
-        if (!::repository.isInitialized) return
+    fun testGetAllProfiles() = runTest {
+        if (!::repository.isInitialized) return@runTest
         // Save something to ensure they exist in DB
         repository.saveConfig(Config(), "config")
         repository.saveConfig(Config(), "p1")
@@ -56,8 +57,8 @@ class ConfigRepositoryTest {
     }
 
     @Test
-    fun testSwitchProfile() {
-        if (!::repository.isInitialized) return
+    fun testSwitchProfile() = runTest {
+        if (!::repository.isInitialized) return@runTest
         val hikingConfig = Config(defaultZoom = 18)
         repository.saveConfig(hikingConfig, "hiking")
         

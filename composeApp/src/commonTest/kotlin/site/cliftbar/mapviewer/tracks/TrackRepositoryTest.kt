@@ -10,7 +10,7 @@ class TrackRepositoryTest {
     private lateinit var repository: TrackRepository
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runTest {
         try {
             database = MapViewerDB(createInMemoryDriver())
             repository = TrackRepository(database)
@@ -72,8 +72,9 @@ class TrackRepositoryTest {
             }
         """.trimIndent()
         
-        val track = repository.importTrack(geoJson, "geojson")
-        assertNotNull(track)
+        val tracks = repository.importTrack(geoJson, "geojson")
+        assertEquals(1, tracks.size)
+        val track = tracks[0]
         assertEquals("GeoJSON Track", track.name)
         assertFalse(track.id.isBlank(), "Track ID should not be blank after import")
         
@@ -105,8 +106,9 @@ class TrackRepositoryTest {
             </gpx>
         """.trimIndent()
         
-        val track = repository.importTrack(gpx, "gpx")
-        assertNotNull(track)
+        val tracks = repository.importTrack(gpx, "gpx")
+        assertEquals(1, tracks.size)
+        val track = tracks[0]
         assertEquals("GPX Track", track.name)
         assertFalse(track.id.isBlank(), "Track ID should not be blank after import")
         assertEquals(1, track.segments.size)
@@ -134,9 +136,9 @@ class TrackRepositoryTest {
             </gpx>
         """.trimIndent()
         
-        val track = repository.importTrack(gpx, "gpx")
-        assertNotNull(track, "Import should succeed even without namespace")
-        assertEquals("GPX Track No Namespace", track.name)
+        val tracks = repository.importTrack(gpx, "gpx")
+        assertEquals(1, tracks.size, "Import should succeed even without namespace")
+        assertEquals("GPX Track No Namespace", tracks[0].name)
     }
 
     @Test
@@ -156,24 +158,28 @@ class TrackRepositoryTest {
             </gpx>
         """.trimIndent()
         
-        val track = repository.importTrack(gpx, "gpx")
-        assertNotNull(track, "Import should succeed for GPX with multiple tracks")
-        assertEquals("Track 1", track.name, "Should pick the first track")
+        val tracks = repository.importTrack(gpx, "gpx")
+        assertEquals(2, tracks.size, "Import should return all tracks from GPX")
+        assertEquals("Track 1", tracks[0].name)
+        assertEquals("Track 2", tracks[1].name)
+        
+        val allTracks = repository.getAllTracks()
+        assertEquals(2, allTracks.size)
     }
     @Test
     fun testImportInvalidGeoJson() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val invalidGeoJson = "{ \"type\": \"FeatureCollection\", \"features\": [] }"
-        val track = repository.importTrack(invalidGeoJson, "geojson")
-        assertNull(track, "Importing GeoJSON with no features should return null")
+        val tracks = repository.importTrack(invalidGeoJson, "geojson")
+        assertTrue(tracks.isEmpty(), "Importing GeoJSON with no features should return empty list")
     }
 
     @Test
     fun testImportMalformedGeoJson() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val malformedGeoJson = "{ \"type\": \"FeatureCollection\", \"features\": " // missing closing brackets
-        val track = repository.importTrack(malformedGeoJson, "geojson")
-        assertNull(track, "Importing malformed GeoJSON should return null")
+        val tracks = repository.importTrack(malformedGeoJson, "geojson")
+        assertTrue(tracks.isEmpty(), "Importing malformed GeoJSON should return empty list")
     }
 
     @Test
@@ -184,16 +190,16 @@ class TrackRepositoryTest {
             <gpx version="1.1" creator="Test">
             </gpx>
         """.trimIndent()
-        val track = repository.importTrack(invalidGpx, "gpx")
-        assertNull(track, "Importing GPX with no tracks should return null")
+        val tracks = repository.importTrack(invalidGpx, "gpx")
+        assertTrue(tracks.isEmpty(), "Importing GPX with no tracks should return empty list")
     }
 
     @Test
     fun testImportMalformedGpx() = runTest(timeout = kotlin.time.Duration.parse("10s")) {
         if (!::repository.isInitialized) return@runTest
         val malformedGpx = "<gpx><trk><name>Test" // missing closing tags
-        val track = repository.importTrack(malformedGpx, "gpx")
-        assertNull(track, "Importing malformed GPX should return null")
+        val tracks = repository.importTrack(malformedGpx, "gpx")
+        assertTrue(tracks.isEmpty(), "Importing malformed GPX should return empty list")
     }
 
     @Test

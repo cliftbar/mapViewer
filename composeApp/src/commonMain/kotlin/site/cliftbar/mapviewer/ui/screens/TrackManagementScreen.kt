@@ -46,11 +46,17 @@ class TrackManagementScreen : Tab {
     override fun Content() {
         val trackRepository = site.cliftbar.mapviewer.LocalTrackRepository.current
         val screenModel = rememberScreenModel { 
-            TrackManagementScreenModel(trackRepository).apply { refreshTracks() }
+            TrackManagementScreenModel(trackRepository)
         }
+        
+        LaunchedEffect(Unit) {
+            screenModel.refreshTracks()
+        }
+
         val scope = rememberCoroutineScope()
         val filePicker = rememberFilePicker()
         var editingTrack by remember { mutableStateOf<Track?>(null) }
+        var bulkEditingStyle by remember { mutableStateOf(false) }
 
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Text("Tracks", style = MaterialTheme.typography.headlineMedium)
@@ -97,6 +103,9 @@ class TrackManagementScreen : Tab {
                     IconButton(onClick = { screenModel.updateSelectedTracksVisibility(false) }) {
                         Icon(Icons.Default.VisibilityOff, contentDescription = "Hide")
                     }
+                    IconButton(onClick = { bulkEditingStyle = true }) {
+                        Icon(Icons.Default.Palette, contentDescription = "Bulk Style")
+                    }
                     IconButton(onClick = { screenModel.deleteSelectedTracks() }) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete Selected")
                     }
@@ -114,8 +123,8 @@ class TrackManagementScreen : Tab {
                         println("[DEBUG_LOG] Pick GPX finished, content length: ${content?.length ?: "null"}")
                         content?.let {
                             try {
-                                val track = screenModel.importTrack(it, "gpx")
-                                println("[DEBUG_LOG] Import GPX result: ${track?.name ?: "null"}")
+                                val imported = screenModel.importTrack(it, "gpx")
+                                println("[DEBUG_LOG] Import GPX result: ${imported.size} tracks")
                             } catch (e: Exception) {
                                 println("[DEBUG_LOG] Crash during GPX import: ${e.message}")
                                 e.printStackTrace()
@@ -135,8 +144,8 @@ class TrackManagementScreen : Tab {
                         println("[DEBUG_LOG] Pick GeoJSON finished, content length: ${content?.length ?: "null"}")
                         content?.let {
                             try {
-                                val track = screenModel.importTrack(it, "geojson")
-                                println("[DEBUG_LOG] Import GeoJSON result: ${track?.name ?: "null"}")
+                                val imported = screenModel.importTrack(it, "geojson")
+                                println("[DEBUG_LOG] Import GeoJSON result: ${imported.size} tracks")
                             } catch (e: Exception) {
                                 println("[DEBUG_LOG] Crash during GeoJSON import: ${e.message}")
                                 e.printStackTrace()
@@ -158,6 +167,8 @@ class TrackManagementScreen : Tab {
                             onDelete = { screenModel.deleteFolder(folder.id) },
                             onRename = { /* TODO */ },
                             onMove = { /* TODO */ },
+                            onAddSelected = { screenModel.addSelectedTracksToFolder(folder.id) },
+                            onRemoveSelected = { screenModel.removeSelectedTracksFromFolder(folder.id) },
                             level = level
                         )
                     }
@@ -236,6 +247,17 @@ class TrackManagementScreen : Tab {
                 }
             )
         }
+
+        if (bulkEditingStyle) {
+            TrackEditDialog(
+                track = Track("", "Bulk Edit", emptyList()), // Dummy track for initial values
+                onDismiss = { bulkEditingStyle = false },
+                onSave = { color, style ->
+                    screenModel.updateSelectedTracksStyle(color, style)
+                    bulkEditingStyle = false
+                }
+            )
+        }
     }
 
     @Composable
@@ -244,6 +266,8 @@ class TrackManagementScreen : Tab {
         onDelete: () -> Unit,
         onRename: (String) -> Unit,
         onMove: (String?) -> Unit,
+        onAddSelected: () -> Unit,
+        onRemoveSelected: () -> Unit,
         level: Int = 0
     ) {
         var expanded by remember { mutableStateOf(false) }
@@ -280,6 +304,18 @@ class TrackManagementScreen : Tab {
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                         DropdownMenuItem(
+                            text = { Text("Add Selected Tracks") },
+                            onClick = { 
+                                // This is slightly tricky as we don't have screenModel here
+                                // But we can pass an onAddSelected action
+                                onAddSelected(); showMenu = false 
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Remove Selected Tracks") },
+                            onClick = { onRemoveSelected(); showMenu = false }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Rename") },
                             onClick = { /* TODO */ showMenu = false }
                         )
@@ -298,6 +334,8 @@ class TrackManagementScreen : Tab {
                         onDelete = { /* TODO */ },
                         onRename = { /* TODO */ },
                         onMove = { /* TODO */ },
+                        onAddSelected = onAddSelected,
+                        onRemoveSelected = onRemoveSelected,
                         level = level + 1
                     )
                 }

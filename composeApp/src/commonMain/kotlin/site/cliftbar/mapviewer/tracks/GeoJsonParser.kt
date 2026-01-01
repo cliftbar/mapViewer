@@ -25,32 +25,35 @@ data class GeoJsonGeometry(
 object GeoJsonParser {
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun parse(content: String): Track? {
+    fun parse(content: String): List<Track> {
         return try {
             val geoJson = json.decodeFromString<GeoJson>(content)
-            val feature = geoJson.features.find { it.geometry.type == "LineString" || it.geometry.type == "MultiLineString" } ?: return null
+            val trackFeatures = geoJson.features.filter { it.geometry.type == "LineString" || it.geometry.type == "MultiLineString" }
             
-            val name = feature.properties["name"]?.jsonPrimitive?.content ?: "Imported GeoJSON"
+            if (trackFeatures.isEmpty()) return emptyList()
             
-            val segments = mutableListOf<TrackSegment>()
-            
-            if (feature.geometry.type == "LineString") {
-                segments.add(parseLineString(feature.geometry.coordinates))
-            } else if (feature.geometry.type == "MultiLineString") {
-                feature.geometry.coordinates.forEach { 
-                    segments.add(parseLineString(it.jsonArray))
+            trackFeatures.map { feature ->
+                val name = feature.properties["name"]?.jsonPrimitive?.content ?: "Imported GeoJSON"
+                val segments = mutableListOf<TrackSegment>()
+                
+                if (feature.geometry.type == "LineString") {
+                    segments.add(parseLineString(feature.geometry.coordinates))
+                } else if (feature.geometry.type == "MultiLineString") {
+                    feature.geometry.coordinates.forEach { 
+                        segments.add(parseLineString(it.jsonArray))
+                    }
                 }
+                
+                Track(
+                    id = "",
+                    name = name,
+                    segments = segments
+                )
             }
-            
-            Track(
-                id = "",
-                name = name,
-                segments = segments
-            )
         } catch (e: Throwable) {
             println("[DEBUG_LOG] GeoJSON Parse Error: ${e.message}")
             e.printStackTrace()
-            null
+            emptyList()
         }
     }
 

@@ -6,18 +6,24 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import site.cliftbar.mapviewer.MapViewerDB
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 
 class ConfigRepository(private val database: MapViewerDB) {
     private val json = Json { ignoreUnknownKeys = true }
     
-    private val _activeConfig = MutableStateFlow(loadConfig())
+    private val _activeConfig = MutableStateFlow(Config())
     val activeConfig: StateFlow<Config> = _activeConfig.asStateFlow()
 
-    fun loadConfig(name: String = "config"): Config {
+    suspend fun initialize() {
+        _activeConfig.value = loadConfig()
+    }
+
+    suspend fun loadConfig(name: String = "config"): Config {
         var config = Config()
 
         // 1. Load from SQLite
-        val sqliteValue = database.`1Queries`.getConfigByKey(name).executeAsOneOrNull()
+        val sqliteValue = database.`1Queries`.getConfigByKey(name).awaitAsOneOrNull()
         if (sqliteValue != null) {
             try {
                 config = json.decodeFromString<Config>(sqliteValue)
@@ -44,7 +50,7 @@ class ConfigRepository(private val database: MapViewerDB) {
         return config
     }
 
-    fun saveConfig(config: Config, name: String = "config") {
+    suspend fun saveConfig(config: Config, name: String = "config") {
         val stringValue = json.encodeToString(config)
         database.`1Queries`.upsertConfig(name, stringValue)
         if (name == "config") {
@@ -52,7 +58,7 @@ class ConfigRepository(private val database: MapViewerDB) {
         }
     }
 
-    fun switchProfile(name: String) {
+    suspend fun switchProfile(name: String) {
         val config = loadConfig(name)
         // If we switch to a different profile, we also update "config" (the active one) 
         // OR we just update the activeConfig flow if we want "config" to always be the active one.
@@ -60,11 +66,11 @@ class ConfigRepository(private val database: MapViewerDB) {
         saveConfig(config, "config")
     }
 
-    fun getAllProfiles(): List<String> {
-        return database.`1Queries`.getAllConfigKeys().executeAsList()
+    suspend fun getAllProfiles(): List<String> {
+        return database.`1Queries`.getAllConfigKeys().awaitAsList()
     }
 
-    fun deleteProfile(name: String) {
+    suspend fun deleteProfile(name: String) {
         if (name != "config") { // Don't allow deleting the default config
             database.`1Queries`.deleteConfigByKey(name)
         }

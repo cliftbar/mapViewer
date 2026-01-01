@@ -36,8 +36,8 @@ class MapScreen : Tab {
     override fun Content() {
         val configRepository = site.cliftbar.mapviewer.LocalConfigRepository.current
         val trackRepository = site.cliftbar.mapviewer.LocalTrackRepository.current
-        val screenModel = rememberScreenModel { MapScreenModel(configRepository.loadConfig(), configRepository, trackRepository) }
         val config by configRepository.activeConfig.collectAsState()
+        val screenModel = rememberScreenModel { MapScreenModel(config, configRepository, trackRepository) }
         val tileProvider = remember { TileProvider(httpClient) }
         var showLayerMenu by remember { mutableStateOf(false) }
 

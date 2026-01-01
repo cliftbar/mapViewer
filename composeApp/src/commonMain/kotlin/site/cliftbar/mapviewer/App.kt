@@ -26,10 +26,14 @@ import site.cliftbar.mapviewer.config.AppTheme
 @Composable
 fun App(
     database: MapViewerDB,
-    configRepository: ConfigRepository = remember { ConfigRepository(database) },
-    trackRepository: TrackRepository = remember { TrackRepository(database) }
+    configRepository: ConfigRepository,
+    trackRepository: TrackRepository
 ) {
     val config by configRepository.activeConfig.collectAsState()
+
+    LaunchedEffect(configRepository) {
+        configRepository.initialize()
+    }
 
     val darkTheme = when (config.theme) {
         AppTheme.SYSTEM -> isSystemInDarkTheme()

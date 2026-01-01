@@ -22,12 +22,12 @@ class AndroidFilePicker(
     override suspend fun pickFile(extensions: List<String>): String? {
         pickDeferred = CompletableDeferred()
         
-        val mimeTypes = extensions.map { ext ->
+        val mimeTypes = extensions.flatMap { ext ->
             when (ext.lowercase()) {
-                "gpx" -> "application/gpx+xml"
-                "json" -> "application/json"
-                "geojson" -> "application/geo+json"
-                else -> "*/*"
+                "gpx" -> listOf("application/gpx+xml", "application/xml", "text/xml", "application/octet-stream")
+                "json" -> listOf("application/json")
+                "geojson" -> listOf("application/geo+json", "application/json")
+                else -> listOf("*/*")
             }
         }.toTypedArray()
         
