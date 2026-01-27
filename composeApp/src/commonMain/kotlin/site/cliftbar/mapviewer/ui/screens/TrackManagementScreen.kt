@@ -21,15 +21,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import site.cliftbar.mapviewer.tracks.LineStyle
 import site.cliftbar.mapviewer.tracks.Track
-import site.cliftbar.mapviewer.tracks.TrackRepository
 import site.cliftbar.mapviewer.platform.rememberFilePicker
 import site.cliftbar.mapviewer.platform.rememberColorPicker
-import mapviewer.composeapp.generated.resources.Res
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import kotlinx.coroutines.launch
 
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import site.cliftbar.mapviewer.ui.viewmodels.TrackManagementScreenModel
+import site.cliftbar.mapviewer.ui.components.TrackStatsPanel
+import site.cliftbar.mapviewer.tracks.stats.TrackStatsContext
 
 class TrackManagementScreen : Tab {
     override val options: TabOptions
@@ -45,6 +45,8 @@ class TrackManagementScreen : Tab {
     @Composable
     override fun Content() {
         val trackRepository = site.cliftbar.mapviewer.LocalTrackRepository.current
+        val configRepository = site.cliftbar.mapviewer.LocalConfigRepository.current
+        val config by configRepository.activeConfig.collectAsState()
         val screenModel = rememberScreenModel { 
             TrackManagementScreenModel(trackRepository)
         }
@@ -176,21 +178,23 @@ class TrackManagementScreen : Tab {
                     // Tracks in this folder
                     items(screenModel.tracks.filter { it.id in folder.trackIds }, key = { "track-${folder.id}-${it.id}" }) { track ->
                         val isSelected = screenModel.selectedTrackIds[track.id] ?: false
-                        Row(modifier = Modifier.padding(start = ((level + 1) * 16).dp)) {
-                            TrackItem(
-                                track = track,
-                                isSelected = isSelected,
-                                onToggleSelection = { screenModel.toggleSelection(track.id) },
-                                onVisibilityChange = { visible -> screenModel.updateTrackVisibility(track.id, visible) },
-                                onEdit = { editingTrack = track },
-                                onExport = {
-                                    screenModel.exportTrack(track, "gpx") { result ->
-                                        result?.let { scope.launch { filePicker.saveFile("${track.name}.gpx", it) } }
-                                    }
-                                },
-                                onDelete = { screenModel.deleteTrack(track.id) }
-                            )
-                        }
+                        TrackRow(
+                            track = track,
+                            isSelected = isSelected,
+                            indent = (level + 1) * 16,
+                            prefs = screenModel.trackStatsPrefs[track.id],
+                            context = TrackStatsContext.fromConfig(config, screenModel.trackStatsPrefs[track.id]),
+                            onToggleSelection = { screenModel.toggleSelection(track.id) },
+                            onVisibilityChange = { visible -> screenModel.updateTrackVisibility(track.id, visible) },
+                            onEdit = { editingTrack = track },
+                            onExport = {
+                                screenModel.exportTrack(track, "gpx") { result ->
+                                    result?.let { scope.launch { filePicker.saveFile("${track.name}.gpx", it) } }
+                                }
+                            },
+                            onDelete = { screenModel.deleteTrack(track.id) },
+                            onUpdatePrefs = { prefs -> screenModel.updateTrackStatsPrefs(prefs) }
+                        )
                     }
 
                     folder.subFolders.forEach { subFolder ->
@@ -212,9 +216,12 @@ class TrackManagementScreen : Tab {
 
                 items(screenModel.tracks, key = { "track-root-${it.id}" }) { track ->
                     val isSelected = screenModel.selectedTrackIds[track.id] ?: false
-                    TrackItem(
+                    TrackRow(
                         track = track,
                         isSelected = isSelected,
+                        indent = 0,
+                        prefs = screenModel.trackStatsPrefs[track.id],
+                        context = TrackStatsContext.fromConfig(config, screenModel.trackStatsPrefs[track.id]),
                         onToggleSelection = { screenModel.toggleSelection(track.id) },
                         onVisibilityChange = { visible ->
                             screenModel.updateTrackVisibility(track.id, visible)
@@ -231,7 +238,8 @@ class TrackManagementScreen : Tab {
                         },
                         onDelete = {
                             screenModel.deleteTrack(track.id)
-                        }
+                        },
+                        onUpdatePrefs = { prefs -> screenModel.updateTrackStatsPrefs(prefs) }
                     )
                 }
             }
@@ -399,6 +407,8 @@ class TrackManagementScreen : Tab {
     private fun TrackItem(
         track: Track,
         isSelected: Boolean,
+        expanded: Boolean,
+        onToggleExpanded: () -> Unit,
         onToggleSelection: () -> Unit,
         onVisibilityChange: (Boolean) -> Unit,
         onEdit: () -> Unit,
@@ -446,6 +456,53 @@ class TrackManagementScreen : Tab {
             
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Delete")
+            }
+
+            IconButton(onClick = onToggleExpanded) {
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = "Toggle Stats"
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun TrackRow(
+        track: Track,
+        isSelected: Boolean,
+        indent: Int,
+        prefs: site.cliftbar.mapviewer.tracks.stats.TrackStatsPrefs?,
+        context: TrackStatsContext,
+        onToggleSelection: () -> Unit,
+        onVisibilityChange: (Boolean) -> Unit,
+        onEdit: () -> Unit,
+        onExport: () -> Unit,
+        onDelete: () -> Unit,
+        onUpdatePrefs: (site.cliftbar.mapviewer.tracks.stats.TrackStatsPrefs) -> Unit
+    ) {
+        var expanded by remember(track.id) { mutableStateOf(false) }
+        Column(modifier = Modifier.padding(start = indent.dp)) {
+            TrackItem(
+                track = track,
+                isSelected = isSelected,
+                expanded = expanded,
+                onToggleExpanded = { expanded = !expanded },
+                onToggleSelection = onToggleSelection,
+                onVisibilityChange = onVisibilityChange,
+                onEdit = onEdit,
+                onExport = onExport,
+                onDelete = onDelete
+            )
+            if (expanded) {
+                TrackStatsPanel(
+                    track = track,
+                    context = context,
+                    prefs = prefs,
+                    onUpdatePrefs = onUpdatePrefs,
+                    showHeader = false,
+                    allowOverrides = true
+                )
             }
         }
     }

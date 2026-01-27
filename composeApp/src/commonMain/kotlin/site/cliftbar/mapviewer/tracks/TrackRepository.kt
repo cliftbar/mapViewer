@@ -9,9 +9,15 @@ import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
+import site.cliftbar.mapviewer.tracks.stats.AvgSpeedBasis
+import site.cliftbar.mapviewer.tracks.stats.DistanceUnit
+import site.cliftbar.mapviewer.tracks.stats.SpeedUnit
+import site.cliftbar.mapviewer.tracks.stats.StoppedTimeAlgorithmId
+import site.cliftbar.mapviewer.tracks.stats.TrackStatsPrefs
 
 class TrackRepository(private val database: MapViewerDB) {
     private val queries = database.`1Queries`
+    private val statsQueries = database.track_stats_prefsQueries
 
     suspend fun getAllTracks(): List<Track> = withContext(Dispatchers.Default) {
         val trackEntities = queries.getAllTracks().awaitAsList()
@@ -208,6 +214,48 @@ class TrackRepository(private val database: MapViewerDB) {
                 name = entity.name,
                 parentId = entity.parent_id
             )
+        }
+    }
+
+    // --- Track Stats Preferences ---
+
+    suspend fun getTrackStatsPrefs(trackId: String): TrackStatsPrefs? = withContext(Dispatchers.Default) {
+        statsQueries.getTrackStatsPrefs(trackId).awaitAsOneOrNull()?.toTrackStatsPrefs()
+    }
+
+    suspend fun getTrackStatsPrefsMap(): Map<String, TrackStatsPrefs> = withContext(Dispatchers.Default) {
+        statsQueries.getAllTrackStatsPrefs().awaitAsList()
+            .mapNotNull { prefs -> prefs.toTrackStatsPrefs()?.let { prefs.track_id to it } }
+            .toMap()
+    }
+
+    suspend fun saveTrackStatsPrefs(prefs: TrackStatsPrefs) = withContext(Dispatchers.Default) {
+        statsQueries.upsertTrackStatsPrefs(
+            track_id = prefs.trackId,
+            avg_speed_basis = prefs.avgSpeedBasis?.name,
+            stopped_algo_id = prefs.stoppedAlgorithmId?.name,
+            stopped_speed_threshold_mps = prefs.stoppedSpeedThresholdMps,
+            stopped_min_stop_seconds = prefs.stoppedMinStopSeconds?.toLong(),
+            distance_unit = prefs.distanceUnit?.name,
+            speed_unit = prefs.speedUnit?.name
+        )
+    }
+
+    private fun site.cliftbar.mapviewer.Track_stats_prefs.toTrackStatsPrefs(): TrackStatsPrefs? {
+        return TrackStatsPrefs(
+            trackId = track_id,
+            avgSpeedBasis = avg_speed_basis.toEnumOrNull { AvgSpeedBasis.valueOf(it) },
+            stoppedAlgorithmId = stopped_algo_id.toEnumOrNull { StoppedTimeAlgorithmId.valueOf(it) },
+            stoppedSpeedThresholdMps = stopped_speed_threshold_mps,
+            stoppedMinStopSeconds = stopped_min_stop_seconds?.toInt(),
+            distanceUnit = distance_unit.toEnumOrNull { DistanceUnit.valueOf(it) },
+            speedUnit = speed_unit.toEnumOrNull { SpeedUnit.valueOf(it) }
+        )
+    }
+
+    private inline fun <T> String?.toEnumOrNull(parser: (String) -> T): T? {
+        return this?.let { value ->
+            runCatching { parser(value) }.getOrNull()
         }
     }
 }

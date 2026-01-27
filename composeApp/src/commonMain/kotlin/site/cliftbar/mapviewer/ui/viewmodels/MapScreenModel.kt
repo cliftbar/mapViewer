@@ -2,6 +2,7 @@ package site.cliftbar.mapviewer.ui.viewmodels
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
@@ -18,6 +19,7 @@ import site.cliftbar.mapviewer.config.ConfigRepository
 import site.cliftbar.mapviewer.map.MapLayer
 import site.cliftbar.mapviewer.tracks.Track
 import site.cliftbar.mapviewer.tracks.TrackRepository
+import site.cliftbar.mapviewer.tracks.stats.TrackStatsPrefs
 
 class MapScreenModel(
     initialConfig: Config,
@@ -27,6 +29,11 @@ class MapScreenModel(
     private var _config = initialConfig
 
     val activeTracks = mutableStateListOf<Track>()
+    val trackStatsPrefs = mutableStateMapOf<String, TrackStatsPrefs>()
+
+    private var _selectedTrackId by mutableStateOf<String?>(null)
+    val selectedTrackId: String?
+        get() = _selectedTrackId
 
     private var _zoom by mutableStateOf(initialConfig.defaultZoom)
     var zoom: Int
@@ -89,6 +96,22 @@ class MapScreenModel(
         screenModelScope.launch {
             activeTracks.clear()
             activeTracks.addAll(trackRepository.getVisibleTracks())
+            trackStatsPrefs.clear()
+            trackStatsPrefs.putAll(trackRepository.getTrackStatsPrefsMap())
+            if (_selectedTrackId == null || activeTracks.none { it.id == _selectedTrackId }) {
+                _selectedTrackId = activeTracks.firstOrNull()?.id
+            }
+        }
+    }
+
+    fun updateSelectedTrack(trackId: String?) {
+        _selectedTrackId = trackId
+    }
+
+    fun updateTrackStatsPrefs(prefs: TrackStatsPrefs) {
+        screenModelScope.launch {
+            trackRepository.saveTrackStatsPrefs(prefs)
+            trackStatsPrefs[prefs.trackId] = prefs
         }
     }
 

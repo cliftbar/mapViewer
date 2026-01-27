@@ -2,6 +2,9 @@
 
 This is a Kotlin Multiplatform (KMP) mapping application.
 
+## TODOs
+- See `TODO.md` for the consolidated feature and platform todo list.
+
 ## Project Goals
 - Show a map using OpenStreetMap (OSM) data.
 - Track current position and save to GPX.
@@ -25,6 +28,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - **All future functionality MUST come with corresponding tests.**
 - **Use `runTest` with explicit timeouts (e.g., 10s) for tests that use coroutines or database operations to prevent emulator stalls.**
 - **For SQL files, make changes via migration (.sqm), not directly in schema (.sq) folders.**
+- Present options in numbered lists when asking clarifying questions.
 - Keep `agent.md` updated with progress and important architectural decisions.
 - **Ask questions whenever something is unclear.**
 
@@ -58,7 +62,10 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - [x] Configure JS/WasmJS targets with WebWorkerDriver and proper Webpack bundling.
 - [x] Implement robust database migration recovery for Android, iOS, and JVM.
 - [x] Resolve GPX/GeoJSON parsing issues across all targets.
+- [x] Implement Track Stats (calculator, settings defaults, per-track overrides, map/track UI).
 - [ ] Implement Raster Overlays.
+- Track stats decisions: Track screen uses expandable details; map selector dropdown; unit prefs support meters/kilometers/feet/miles for distance and km/h/m/s/mph/knots for speed; defaults use moving time and speed threshold with 0.1 m/s and 120s; per-track overrides include avg speed + stopped time settings; tests in commonMain package.
+- Unit preferences live in Settings -> General; per-track unit overrides are supported.
 
 ## Major Lessons from Session
 

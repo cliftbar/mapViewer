@@ -1,0 +1,28 @@
+CREATE TABLE IF NOT EXISTS track_stats_prefs (
+    track_id TEXT PRIMARY KEY,
+    avg_speed_basis TEXT,
+    stopped_algo_id TEXT,
+    stopped_speed_threshold_mps REAL,
+    stopped_min_stop_seconds INTEGER,
+    distance_unit TEXT,
+    speed_unit TEXT,
+    FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+);
+
+getTrackStatsPrefs:
+SELECT * FROM track_stats_prefs WHERE track_id = ?;
+
+getAllTrackStatsPrefs:
+SELECT * FROM track_stats_prefs;
+
+upsertTrackStatsPrefs:
+INSERT OR REPLACE INTO track_stats_prefs(
+    track_id,
+    avg_speed_basis,
+    stopped_algo_id,
+    stopped_speed_threshold_mps,
+    stopped_min_stop_seconds,
+    distance_unit,
+    speed_unit
+)
+VALUES (?, ?, ?, ?, ?, ?, ?);

@@ -13,14 +13,13 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import site.cliftbar.mapviewer.config.Config
-import site.cliftbar.mapviewer.config.ConfigRepository
-import site.cliftbar.mapviewer.tracks.TrackRepository
 import site.cliftbar.mapviewer.map.MapLayer
 import site.cliftbar.mapviewer.map.TileProvider
 import site.cliftbar.mapviewer.network.httpClient
 import site.cliftbar.mapviewer.ui.components.MapView
+import site.cliftbar.mapviewer.ui.components.TrackStatsPanel
 import site.cliftbar.mapviewer.ui.viewmodels.MapScreenModel
+import site.cliftbar.mapviewer.tracks.stats.TrackStatsContext
 
 class MapScreen : Tab {
     override val options: TabOptions
@@ -61,6 +60,46 @@ class MapScreen : Tab {
                 initialLat = config.initialLat,
                 initialLon = config.initialLon
             )
+
+            val selectedTrack = screenModel.selectedTrackId?.let { trackId ->
+                screenModel.activeTracks.firstOrNull { it.id == trackId }
+            }
+
+            Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
+                var showTrackMenu by remember { mutableStateOf(false) }
+                TextButton(onClick = { showTrackMenu = true }) {
+                    Text(selectedTrack?.name ?: "Select Track")
+                }
+                DropdownMenu(
+                    expanded = showTrackMenu,
+                    onDismissRequest = { showTrackMenu = false }
+                ) {
+                    screenModel.activeTracks.forEach { track ->
+                        DropdownMenuItem(
+                            text = { Text(track.name) },
+                            onClick = {
+                                screenModel.updateSelectedTrack(track.id)
+                                showTrackMenu = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            selectedTrack?.let { track ->
+                val prefs = screenModel.trackStatsPrefs[track.id]
+                val context = TrackStatsContext.fromConfig(config, prefs)
+                Box(modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)) {
+                    TrackStatsPanel(
+                        track = track,
+                        context = context,
+                        prefs = prefs,
+                        onUpdatePrefs = { updated -> screenModel.updateTrackStatsPrefs(updated) },
+                        showHeader = false,
+                        allowOverrides = false
+                    )
+                }
+            }
 
             // Layer Selection Button
             Box(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)) {

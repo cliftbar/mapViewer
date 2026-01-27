@@ -11,6 +11,7 @@ import site.cliftbar.mapviewer.tracks.Folder
 import site.cliftbar.mapviewer.tracks.LineStyle
 import site.cliftbar.mapviewer.tracks.Track
 import site.cliftbar.mapviewer.tracks.TrackRepository
+import site.cliftbar.mapviewer.tracks.stats.TrackStatsPrefs
 
 class TrackManagementScreenModel(
     private val trackRepository: TrackRepository
@@ -18,6 +19,7 @@ class TrackManagementScreenModel(
     val tracks = mutableStateListOf<Track>()
     val folders = mutableStateListOf<Folder>()
     val selectedTrackIds = mutableStateMapOf<String, Boolean>()
+    val trackStatsPrefs = mutableStateMapOf<String, TrackStatsPrefs>()
 
     init {
         // We will call refreshTracks() explicitly when needed, 
@@ -27,12 +29,15 @@ class TrackManagementScreenModel(
     fun refreshTracks() = screenModelScope.launch {
         val allTracks = trackRepository.getAllTracks()
         val folderHierarchy = trackRepository.getFolderHierarchy()
+        val statsPrefs = trackRepository.getTrackStatsPrefsMap()
         withContext(Dispatchers.Main) {
             tracks.clear()
             tracks.addAll(allTracks)
             folders.clear()
             folders.addAll(folderHierarchy)
             selectedTrackIds.clear()
+            trackStatsPrefs.clear()
+            trackStatsPrefs.putAll(statsPrefs)
         }
     }
 
@@ -160,6 +165,13 @@ class TrackManagementScreenModel(
                     tracks[index] = track.copy(color = color, lineStyle = style)
                 }
             }
+        }
+    }
+
+    fun updateTrackStatsPrefs(prefs: TrackStatsPrefs) = screenModelScope.launch {
+        trackRepository.saveTrackStatsPrefs(prefs)
+        withContext(Dispatchers.Main) {
+            trackStatsPrefs[prefs.trackId] = prefs
         }
     }
 }
