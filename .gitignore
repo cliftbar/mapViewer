@@ -58,3 +58,4 @@ package-lock.json
 
 .output.txt
 *.output.txt
+*.log

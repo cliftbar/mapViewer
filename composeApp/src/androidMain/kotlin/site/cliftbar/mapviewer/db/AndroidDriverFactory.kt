@@ -30,12 +30,11 @@ class AndroidDriverFactory(private val context: Context) {
         val currentVersion = getVersion(driver)
         val isBroken = currentVersion == MapViewerDB.Schema.version && !hasFoldersTable(driver)
         
-        if (currentVersion == 0L) {
+        if (currentVersion == 0L || isBroken) {
             MapViewerDB.Schema.create(driver).await()
             setVersion(driver, MapViewerDB.Schema.version)
-        } else if (currentVersion < MapViewerDB.Schema.version || isBroken) {
-            val startVersion = if (isBroken) MapViewerDB.Schema.version - 1 else currentVersion
-            MapViewerDB.Schema.migrate(driver, startVersion, MapViewerDB.Schema.version).await()
+        } else if (currentVersion < MapViewerDB.Schema.version) {
+            MapViewerDB.Schema.migrate(driver, currentVersion, MapViewerDB.Schema.version).await()
             setVersion(driver, MapViewerDB.Schema.version)
         }
         

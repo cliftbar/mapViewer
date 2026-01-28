@@ -1,6 +1,8 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest
+import java.util.concurrent.locks.ReentrantLock
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -226,6 +228,33 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+tasks.withType<KotlinNativeTest>().configureEach {
+    if (name != "iosX64Test") {
+        return@configureEach
+    }
+
+    reports.junitXml.required.set(false)
+    reports.html.required.set(false)
+
+    val logFileProvider = layout.buildDirectory.file("test-logs/${name}.log")
+    val logLock = ReentrantLock()
+
+    doFirst {
+        val logFile = logFileProvider.get().asFile
+        logFile.parentFile.mkdirs()
+        logFile.writeText("")
+    }
+
+    addTestOutputListener { _, event ->
+        logLock.lock()
+        try {
+            logFileProvider.get().asFile.appendText(event.message)
+        } finally {
+            logLock.unlock()
+        }
     }
 }
 

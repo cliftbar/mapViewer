@@ -42,7 +42,7 @@ class TrackManagementScreenModelTest {
         
         val model = TrackManagementScreenModel(trackRepository)
         val job = model.refreshTracks()
-        if (job is Job) job.join()
+        job.join()
         advanceUntilIdle()
         
         assertEquals(1, model.tracks.size)
@@ -77,11 +77,11 @@ class TrackManagementScreenModelTest {
         
         val model = TrackManagementScreenModel(trackRepository)
         val job = model.refreshTracks()
-        if (job is Job) job.join()
+        job.join()
         advanceUntilIdle()
         
         val updateJob = model.updateTrackVisibility("test-visibility", false)
-        if (updateJob is Job) updateJob.join()
+        updateJob.join()
         advanceUntilIdle()
         
         assertFalse(model.tracks[0].visible)
@@ -98,11 +98,11 @@ class TrackManagementScreenModelTest {
         
         val model = TrackManagementScreenModel(trackRepository)
         val job = model.refreshTracks()
-        if (job is Job) job.join()
+        job.join()
         advanceUntilIdle()
         
         val deleteJob = model.deleteTrack("test-delete")
-        if (deleteJob is Job) deleteJob.join()
+        deleteJob.join()
         advanceUntilIdle()
         
         assertTrue(model.tracks.isEmpty())
@@ -119,7 +119,7 @@ class TrackManagementScreenModelTest {
         
         val model = TrackManagementScreenModel(trackRepository)
         val job = model.refreshTracks()
-        if (job is Job) job.join()
+        job.join()
         advanceUntilIdle()
         
         model.toggleSelection("1")
@@ -151,7 +151,7 @@ class TrackManagementScreenModelTest {
         
         val model = TrackManagementScreenModel(trackRepository)
         val job = model.refreshTracks()
-        if (job is Job) job.join()
+        job.join()
         advanceUntilIdle()
         
         assertEquals(3, model.tracks.size, "Should have 3 tracks initially")
@@ -160,7 +160,7 @@ class TrackManagementScreenModelTest {
         model.toggleSelection("3")
         
         val deleteJob = model.deleteSelectedTracks()
-        if (deleteJob is Job) deleteJob.join()
+        deleteJob.join()
         advanceUntilIdle()
         
         assertEquals(1, model.tracks.size, "Should have 1 track left after bulk delete")
@@ -178,14 +178,14 @@ class TrackManagementScreenModelTest {
         
         val model = TrackManagementScreenModel(trackRepository)
         val job = model.refreshTracks()
-        if (job is Job) job.join()
+        job.join()
         advanceUntilIdle()
         
         model.toggleSelection("1")
         model.toggleSelection("2")
         
         val updateJob = model.updateSelectedTracksVisibility(false)
-        if (updateJob is Job) updateJob.join()
+        updateJob.join()
         advanceUntilIdle()
         
         assertEquals(2, model.tracks.size)
@@ -206,14 +206,14 @@ class TrackManagementScreenModelTest {
         
         val model = TrackManagementScreenModel(trackRepository)
         val job = model.refreshTracks()
-        if (job is Job) job.join()
+        job.join()
         advanceUntilIdle()
         
         model.toggleSelection("1")
         model.toggleSelection("2")
         
         val updateJob = model.updateSelectedTracksStyle("#FF0000", LineStyle.DASHED)
-        if (updateJob is Job) updateJob.join()
+        updateJob.join()
         advanceUntilIdle()
         
         assertEquals("#FF0000", model.tracks[0].color)
