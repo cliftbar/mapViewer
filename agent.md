@@ -64,6 +64,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - [x] Resolve GPX/GeoJSON parsing issues across all targets.
 - [x] Implement Track Stats (calculator, settings defaults, per-track overrides, map/track UI).
 - [x] Add mouse wheel/pinch zoom and labeled zoom buttons on the map screen.
+- [x] Prevent map autosaves from overwriting updated settings by syncing active config.
 - [ ] Implement Raster Overlays.
 - Track stats decisions: Track screen uses expandable details; map selector dropdown; unit prefs support meters/kilometers/feet/miles for distance and km/h/m/s/mph/knots for speed; defaults use moving time and speed threshold with 0.1 m/s and 120s; per-track overrides include avg speed + stopped time settings; tests in commonMain package.
 - Unit preferences live in Settings -> General; per-track unit overrides are supported.

@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 class AndroidFilePicker(
     private val context: android.content.Context,
     private val pickLauncher: (Array<String>) -> Unit,
+    private val pickAnyLauncher: (String) -> Unit,
     private val saveLauncher: (String) -> Unit
 ) : FilePicker {
     private var pickDeferred: CompletableDeferred<String?>? = null
@@ -21,20 +22,33 @@ class AndroidFilePicker(
 
     override suspend fun pickFile(extensions: List<String>): String? {
         pickDeferred = CompletableDeferred()
-        
+        val wantsGpx = extensions.any { it.equals("gpx", ignoreCase = true) }
+
         val mimeTypes = extensions.flatMap { ext ->
             when (ext.lowercase()) {
-                "gpx" -> listOf("application/gpx+xml", "application/xml", "text/xml", "application/octet-stream")
+                "gpx" -> listOf(
+                    "application/gpx+xml",
+                    "application/x-gpx+xml",
+                    "application/vnd.gpx+xml",
+                    "text/gpx+xml",
+                    "application/xml",
+                    "text/xml",
+                    "application/octet-stream"
+                )
                 "json" -> listOf("application/json")
                 "geojson" -> listOf("application/geo+json", "application/json")
                 else -> listOf("*/*")
             }
-        }.toTypedArray()
-        
-        val finalMimeTypes = if (mimeTypes.isEmpty()) arrayOf("*/*") else mimeTypes
+        }.toMutableList()
+
+        val finalMimeTypes = if (mimeTypes.isEmpty()) arrayOf("*/*") else mimeTypes.toTypedArray()
 
         try {
-            pickLauncher(finalMimeTypes)
+            if (wantsGpx) {
+                pickAnyLauncher("*/*")
+            } else {
+                pickLauncher(finalMimeTypes)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             pickDeferred?.complete(null)
@@ -110,6 +124,9 @@ actual fun rememberFilePicker(): FilePicker {
     val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         pickerState.value?.onFilePicked(uri)
     }
+    val pickAnyLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        pickerState.value?.onFilePicked(uri)
+    }
 
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
         pickerState.value?.onFileSelectedForSave(uri)
@@ -119,6 +136,7 @@ actual fun rememberFilePicker(): FilePicker {
         AndroidFilePicker(
             context,
             pickLauncher = { mimeTypes -> pickLauncher.launch(mimeTypes) },
+            pickAnyLauncher = { mimeType -> pickAnyLauncher.launch(mimeType) },
             saveLauncher = { filename -> saveLauncher.launch(filename) }
         )
     }

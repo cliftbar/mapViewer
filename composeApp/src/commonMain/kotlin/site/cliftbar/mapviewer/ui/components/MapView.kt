@@ -19,9 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onSizeChanged
+import io.ktor.util.date.getTimeMillis
 import site.cliftbar.mapviewer.tracks.LineStyle
 import site.cliftbar.mapviewer.tracks.Track
 import kotlin.math.*
+
 
 fun latLonToTileX(lon: Double, zoom: Int): Double {
     return (lon + 180.0) / 360.0 * (1 shl zoom)
@@ -82,10 +84,18 @@ fun MapView(
     val tiles = remember { mutableStateMapOf<String, ImageBitmap>() }
     val loadingTiles = remember { mutableStateSetOf<String>() }
     var zoomAccumulator by remember { mutableStateOf(1f) }
+    var lastZoomMillis by remember { mutableStateOf(0L) }
 
     val currentCenterOffset = rememberUpdatedState(centerOffset)
     val currentOnCenterOffsetChange = rememberUpdatedState(onCenterOffsetChange)
     val currentOnZoomRequest = rememberUpdatedState(onZoomRequest)
+    val zoomCooldownMs = 500L
+    fun requestZoom(delta: Int, focus: Offset) {
+        val now = getTimeMillis()
+        if (now - lastZoomMillis < zoomCooldownMs) return
+        lastZoomMillis = now
+        currentOnZoomRequest.value(delta, focus)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Canvas(
@@ -104,10 +114,10 @@ fun MapView(
                         if (zoomChange != 1f) {
                             zoomAccumulator *= zoomChange
                             if (zoomAccumulator > 1.1f) {
-                                currentOnZoomRequest.value(1, centroid)
+                                requestZoom(1, centroid)
                                 zoomAccumulator = 1f
                             } else if (zoomAccumulator < 0.9f) {
-                                currentOnZoomRequest.value(-1, centroid)
+                                requestZoom(-1, centroid)
                                 zoomAccumulator = 1f
                             }
                         }
@@ -121,7 +131,7 @@ fun MapView(
                             val change = event.changes.firstOrNull() ?: continue
                             val delta = change.scrollDelta.y
                             if (delta == 0f) continue
-                            currentOnZoomRequest.value(if (delta < 0f) 1 else -1, change.position)
+                            requestZoom(if (delta < 0f) 1 else -1, change.position)
                             change.consume()
                         }
                     }

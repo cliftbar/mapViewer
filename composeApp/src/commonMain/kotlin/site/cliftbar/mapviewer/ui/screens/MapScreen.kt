@@ -26,8 +26,11 @@ import site.cliftbar.mapviewer.network.httpClient
 import site.cliftbar.mapviewer.ui.components.MapView
 import site.cliftbar.mapviewer.ui.components.TrackStatsPanel
 import site.cliftbar.mapviewer.ui.components.calculateZoomedCenterOffset
+import site.cliftbar.mapviewer.ui.components.latLonToTileX
+import site.cliftbar.mapviewer.ui.components.latLonToTileY
 import site.cliftbar.mapviewer.ui.viewmodels.MapScreenModel
 import site.cliftbar.mapviewer.tracks.stats.TrackStatsContext
+import site.cliftbar.mapviewer.tracks.Track
 
 class MapScreen : Tab {
     override val options: TabOptions
@@ -68,6 +71,15 @@ class MapScreen : Tab {
             )
             screenModel.zoom = clampedZoom
             screenModel.centerOffset = newCenterOffset
+        }
+        fun trackCenterLatLon(track: Track): Pair<Double, Double>? {
+            val points = track.segments.asSequence().flatMap { it.points.asSequence() }.toList()
+            if (points.isEmpty()) return null
+            val minLat = points.minOf { it.latitude }
+            val maxLat = points.maxOf { it.latitude }
+            val minLon = points.minOf { it.longitude }
+            val maxLon = points.maxOf { it.longitude }
+            return (minLat + maxLat) / 2.0 to (minLon + maxLon) / 2.0
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -221,6 +233,25 @@ class MapScreen : Tab {
                             selectedTrack?.let { track ->
                                 val prefs = screenModel.trackStatsPrefs[track.id]
                                 val context = TrackStatsContext.fromConfig(config, prefs)
+                                val canJumpToTrack = track.segments.any { it.points.isNotEmpty() }
+                                FilledTonalButton(
+                                    onClick = {
+                                        val viewSize = screenModel.viewSize
+                                        if (viewSize.width <= 0 || viewSize.height <= 0) return@FilledTonalButton
+                                        val center = trackCenterLatLon(track) ?: return@FilledTonalButton
+                                        val tileSize = 256
+                                        val tileX = latLonToTileX(center.second, screenModel.zoom)
+                                        val tileY = latLonToTileY(center.first, screenModel.zoom)
+                                        screenModel.centerOffset = Offset(
+                                            (viewSize.width / 2f) - (tileX * tileSize).toFloat(),
+                                            (viewSize.height / 2f) - (tileY * tileSize).toFloat()
+                                        )
+                                    },
+                                    enabled = canJumpToTrack,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Jump to track")
+                                }
                                 TrackStatsPanel(
                                     track = track,
                                     context = context,

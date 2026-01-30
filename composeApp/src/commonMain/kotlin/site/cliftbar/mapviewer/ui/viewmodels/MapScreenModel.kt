@@ -77,8 +77,8 @@ class MapScreenModel(
         screenModelScope.launch {
             // Wait for non-default config if possible, or just update when it arrives
             configRepository.activeConfig.collect { config ->
+                _config = config
                 if (!initialized) {
-                    _config = config
                     _zoom = config.defaultZoom
                     // Re-initialize activeLayers from new config if not yet modified by user
                     activeLayers.clear()
