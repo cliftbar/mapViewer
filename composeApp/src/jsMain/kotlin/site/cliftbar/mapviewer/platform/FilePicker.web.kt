@@ -10,7 +10,6 @@ import org.w3c.dom.url.URL
 import org.w3c.files.Blob
 import org.w3c.files.FileReader
 import org.w3c.files.get
-
 import kotlin.js.ExperimentalWasmJsInterop
 
 @Composable

@@ -6,14 +6,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import site.cliftbar.mapviewer.tracks.Track
 import site.cliftbar.mapviewer.tracks.stats.AvgSpeedBasis
@@ -39,40 +43,86 @@ fun TrackStatsPanel(
     onUpdatePrefs: (TrackStatsPrefs) -> Unit,
     modifier: Modifier = Modifier,
     showHeader: Boolean = true,
-    allowOverrides: Boolean = false
+    allowOverrides: Boolean = false,
+    alignEnd: Boolean = false,
+    compact: Boolean = false,
+    fillWidth: Boolean = true
 ) {
     val calculator = remember { TrackStatsCalculator() }
-    val stats = remember(track, context) { calculator.computeStats(track, context) }
+    val stats = calculator.computeStats(track, context)
     val currentPrefs = prefs ?: TrackStatsPrefs(trackId = track.id)
     var showOverrides by remember { mutableStateOf(false) }
+    var showAvgSpeedMenu by remember { mutableStateOf(false) }
+    val avgSpeedLabel = when (context.avgSpeedBasis) {
+        AvgSpeedBasis.TOTAL_TIME -> "Total time"
+        AvgSpeedBasis.MOVING_TIME -> "Moving time"
+    }
+    val rowArrangement = if (alignEnd) {
+        Arrangement.spacedBy(12.dp, Alignment.End)
+    } else {
+        Arrangement.SpaceBetween
+    }
+    val textAlign = if (alignEnd) TextAlign.End else TextAlign.Start
+    val labelStyle = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodySmall
+    val valueStyle = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge
+    val verticalPadding = if (compact) 2.dp else 6.dp
+    val contentPadding = if (compact) 8.dp else 12.dp
+    val containerModifier = if (fillWidth) {
+        modifier.fillMaxWidth()
+    } else {
+        modifier.wrapContentWidth(if (alignEnd) Alignment.End else Alignment.Start)
+    }
 
-    Column(modifier = modifier.fillMaxWidth().padding(12.dp)) {
+    Column(
+        modifier = containerModifier.padding(contentPadding),
+        horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start
+    ) {
         if (showHeader) {
             Text(track.name, style = MaterialTheme.typography.titleMedium)
         }
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Avg speed", style = MaterialTheme.typography.labelLarge)
-            AvgSpeedBasis.values().forEach { basis ->
-                FilterChip(
-                    selected = context.avgSpeedBasis == basis,
-                    onClick = { onUpdatePrefs(currentPrefs.copy(avgSpeedBasis = basis)) },
-                    label = { Text(basis.name.lowercase().replace('_', ' ')) }
-                )
+            Text("Avg speed", style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge)
+            Box(modifier = Modifier.padding(start = 8.dp)) {
+                TextButton(onClick = { showAvgSpeedMenu = true }) {
+                    Text(avgSpeedLabel)
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                }
+                DropdownMenu(
+                    expanded = showAvgSpeedMenu,
+                    onDismissRequest = { showAvgSpeedMenu = false }
+                ) {
+                    AvgSpeedBasis.values().forEach { basis ->
+                        DropdownMenuItem(
+                            text = { Text(basis.name.lowercase().replace('_', ' ')) },
+                            onClick = {
+                                onUpdatePrefs(currentPrefs.copy(avgSpeedBasis = basis))
+                                showAvgSpeedMenu = false
+                            }
+                        )
+                    }
+                }
             }
         }
 
         stats.forEach { stat ->
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth().padding(vertical = verticalPadding),
+                horizontalArrangement = rowArrangement
             ) {
-                Text(stat.definition.label, style = MaterialTheme.typography.bodySmall)
-                Text(stat.formattedValue, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    stat.definition.label,
+                    style = labelStyle,
+                    textAlign = textAlign
+                )
+                Text(
+                    stat.formattedValue,
+                    style = valueStyle,
+                    textAlign = textAlign
+                )
             }
         }
 

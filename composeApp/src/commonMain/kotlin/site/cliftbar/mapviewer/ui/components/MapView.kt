@@ -1,19 +1,17 @@
 package site.cliftbar.mapviewer.ui.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Text
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import site.cliftbar.mapviewer.map.MapLayer
 import site.cliftbar.mapviewer.map.TileProvider
@@ -42,17 +40,37 @@ fun tileYToLat(y: Double, zoom: Int): Double {
     return 180.0 / PI * atan(0.5 * (exp(n) - exp(-n)))
 }
 
+fun calculateZoomedCenterOffset(
+    currentZoom: Int,
+    newZoom: Int,
+    focus: Offset,
+    centerOffset: Offset,
+    tileSize: Int = 256
+): Offset {
+    val focusX = (focus.x - centerOffset.x) / tileSize
+    val focusY = (focus.y - centerOffset.y) / tileSize
+    val lat = tileYToLat(focusY.toDouble(), currentZoom)
+    val lon = tileXToLon(focusX.toDouble(), currentZoom)
+
+    val newTileX = latLonToTileX(lon, newZoom)
+    val newTileY = latLonToTileY(lat, newZoom)
+    return Offset(
+        focus.x - (newTileX * tileSize).toFloat(),
+        focus.y - (newTileY * tileSize).toFloat()
+    )
+}
+
 @Composable
 fun MapView(
     tileProvider: TileProvider,
     zoom: Int,
-    onZoomChange: (Int) -> Unit,
     centerOffset: Offset,
     onCenterOffsetChange: (Offset) -> Unit,
     initialized: Boolean,
     onInitializedChange: (Boolean) -> Unit,
     viewSize: IntSize,
     onViewSizeChange: (IntSize) -> Unit,
+    onZoomRequest: (delta: Int, focus: Offset) -> Unit,
     activeLayers: List<MapLayer> = listOf(MapLayer.OpenStreetMap),
     activeTracks: List<Track> = emptyList(),
     initialLat: Double = 45.5152,
@@ -63,30 +81,11 @@ fun MapView(
     val coroutineScope = rememberCoroutineScope()
     val tiles = remember { mutableStateMapOf<String, ImageBitmap>() }
     val loadingTiles = remember { mutableStateSetOf<String>() }
+    var zoomAccumulator by remember { mutableStateOf(1f) }
 
     val currentCenterOffset = rememberUpdatedState(centerOffset)
     val currentOnCenterOffsetChange = rememberUpdatedState(onCenterOffsetChange)
-
-    fun updateZoom(newZoom: Int) {
-        if (newZoom == zoom || viewSize.width <= 0 || viewSize.height <= 0) return
-
-        // 1. Calculate current geographic center
-        val centerX = (viewSize.width / 2f - currentCenterOffset.value.x) / tileSize
-        val centerY = (viewSize.height / 2f - currentCenterOffset.value.y) / tileSize
-        val lat = tileYToLat(centerY.toDouble(), zoom)
-        val lon = tileXToLon(centerX.toDouble(), zoom)
-
-        // 2. Update zoom
-        onZoomChange(newZoom)
-
-        // 3. Recalculate centerOffset for new zoom to keep same lat/lon at center
-        val newTileX = latLonToTileX(lon, newZoom)
-        val newTileY = latLonToTileY(lat, newZoom)
-        currentOnCenterOffsetChange.value(Offset(
-            (viewSize.width / 2f) - (newTileX * tileSize).toFloat(),
-            (viewSize.height / 2f) - (newTileY * tileSize).toFloat()
-        ))
-    }
+    val currentOnZoomRequest = rememberUpdatedState(onZoomRequest)
 
     Box(modifier = Modifier.fillMaxSize()) {
         Canvas(
@@ -98,9 +97,33 @@ fun MapView(
                     }
                 }
                 .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        currentOnCenterOffsetChange.value(currentCenterOffset.value + dragAmount)
+                    detectTransformGestures { centroid, pan, zoomChange, _ ->
+                        if (pan != Offset.Zero) {
+                            currentOnCenterOffsetChange.value(currentCenterOffset.value + pan)
+                        }
+                        if (zoomChange != 1f) {
+                            zoomAccumulator *= zoomChange
+                            if (zoomAccumulator > 1.1f) {
+                                currentOnZoomRequest.value(1, centroid)
+                                zoomAccumulator = 1f
+                            } else if (zoomAccumulator < 0.9f) {
+                                currentOnZoomRequest.value(-1, centroid)
+                                zoomAccumulator = 1f
+                            }
+                        }
+                    }
+                }
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            if (event.type != PointerEventType.Scroll) continue
+                            val change = event.changes.firstOrNull() ?: continue
+                            val delta = change.scrollDelta.y
+                            if (delta == 0f) continue
+                            currentOnZoomRequest.value(if (delta < 0f) 1 else -1, change.position)
+                            change.consume()
+                        }
                     }
                 }
         ) {
@@ -196,23 +219,5 @@ fun MapView(
             }
         }
 
-        // Zoom controls
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            FloatingActionButton(
-                onClick = { if (zoom < 19) updateZoom(zoom + 1) },
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Text("+")
-            }
-            FloatingActionButton(
-                onClick = { if (zoom > 0) updateZoom(zoom - 1) }
-            ) {
-                Text("-")
-            }
-        }
     }
 }

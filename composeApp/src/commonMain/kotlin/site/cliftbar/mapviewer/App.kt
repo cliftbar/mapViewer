@@ -1,15 +1,17 @@
 package site.cliftbar.mapviewer
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -50,16 +52,28 @@ fun App(
         ) {
             TabNavigator(MapScreen()) {
                 Scaffold(
-                    bottomBar = {
-                        NavigationBar {
-                            TabNavigationItem(MapScreen())
-                            TabNavigationItem(TrackManagementScreen())
-                            TabNavigationItem(SettingsScreen())
-                        }
-                    }
+                    contentWindowInsets = WindowInsets(0)
                 ) { paddingValues ->
                     Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
                         CurrentTab()
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(12.dp)
+                        ) {
+                            NavigationBar(
+                                modifier = Modifier
+                                    .widthIn(max = 520.dp)
+                                    .clip(MaterialTheme.shapes.extraLarge),
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                                tonalElevation = 4.dp,
+                                windowInsets = WindowInsets(0)
+                            ) {
+                                TabNavigationItem(MapScreen())
+                                TabNavigationItem(TrackManagementScreen())
+                                TabNavigationItem(SettingsScreen())
+                            }
+                        }
                     }
                 }
             }

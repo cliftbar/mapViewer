@@ -1,14 +1,21 @@
 package site.cliftbar.mapviewer.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.*
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -18,6 +25,7 @@ import site.cliftbar.mapviewer.map.TileProvider
 import site.cliftbar.mapviewer.network.httpClient
 import site.cliftbar.mapviewer.ui.components.MapView
 import site.cliftbar.mapviewer.ui.components.TrackStatsPanel
+import site.cliftbar.mapviewer.ui.components.calculateZoomedCenterOffset
 import site.cliftbar.mapviewer.ui.viewmodels.MapScreenModel
 import site.cliftbar.mapviewer.tracks.stats.TrackStatsContext
 
@@ -39,22 +47,40 @@ class MapScreen : Tab {
         val screenModel = rememberScreenModel { MapScreenModel(config, configRepository, trackRepository) }
         val tileProvider = remember { TileProvider(httpClient) }
         var showLayerMenu by remember { mutableStateOf(false) }
+        var showTrackMenu by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             screenModel.refreshTracks()
+        }
+
+        val maxZoom = 19
+        fun updateZoomAt(newZoom: Int, focus: Offset) {
+            if (screenModel.viewSize.width <= 0 || screenModel.viewSize.height <= 0) return
+            val clampedZoom = newZoom.coerceIn(0, maxZoom)
+            if (clampedZoom == screenModel.zoom) return
+
+            val previousZoom = screenModel.zoom
+            val newCenterOffset = calculateZoomedCenterOffset(
+                currentZoom = previousZoom,
+                newZoom = clampedZoom,
+                focus = focus,
+                centerOffset = screenModel.centerOffset
+            )
+            screenModel.zoom = clampedZoom
+            screenModel.centerOffset = newCenterOffset
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
             MapView(
                 tileProvider = tileProvider,
                 zoom = screenModel.zoom,
-                onZoomChange = { screenModel.zoom = it },
                 centerOffset = screenModel.centerOffset,
                 onCenterOffsetChange = { screenModel.centerOffset = it },
                 initialized = screenModel.initialized,
                 onInitializedChange = { screenModel.initialized = it },
                 viewSize = screenModel.viewSize,
                 onViewSizeChange = { screenModel.viewSize = it },
+                onZoomRequest = { delta, focus -> updateZoomAt(screenModel.zoom + delta, focus) },
                 activeLayers = screenModel.activeLayers,
                 activeTracks = screenModel.activeTracks,
                 initialLat = config.initialLat,
@@ -64,120 +90,189 @@ class MapScreen : Tab {
             val selectedTrack = screenModel.selectedTrackId?.let { trackId ->
                 screenModel.activeTracks.firstOrNull { it.id == trackId }
             }
-
-            Box(modifier = Modifier.align(Alignment.TopStart).padding(16.dp)) {
-                var showTrackMenu by remember { mutableStateOf(false) }
-                TextButton(onClick = { showTrackMenu = true }) {
-                    Text(selectedTrack?.name ?: "Select Track")
-                }
-                DropdownMenu(
-                    expanded = showTrackMenu,
-                    onDismissRequest = { showTrackMenu = false }
+            Box(modifier = Modifier.align(Alignment.CenterEnd).padding(16.dp)) {
+                Column(
+                    modifier = Modifier.widthIn(max = 320.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.End
                 ) {
-                    screenModel.activeTracks.forEach { track ->
-                        DropdownMenuItem(
-                            text = { Text(track.name) },
-                            onClick = {
-                                screenModel.updateSelectedTrack(track.id)
-                                showTrackMenu = false
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        tonalElevation = 2.dp,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+                            FilledTonalButton(
+                                onClick = { showLayerMenu = true }
+                            ) {
+                                Icon(Icons.Default.Layers, contentDescription = "Layers")
+                                Text("Layers", modifier = Modifier.padding(start = 8.dp))
                             }
-                        )
+
+                            DropdownMenu(
+                                expanded = showLayerMenu,
+                                onDismissRequest = { showLayerMenu = false }
+                            ) {
+                                val layers = listOf(
+                                    MapLayer.OpenStreetMap,
+                                    MapLayer.OpenCycleMap,
+                                    MapLayer.OpenSnowMap,
+                                    MapLayer.WaymarkedTrailsSki
+                                )
+                                val baseLayers = layers.filter { !it.isOverlay }
+                                val overlayLayers = layers.filter { it.isOverlay }
+
+                                Text(
+                                    "Base Maps",
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+
+                                baseLayers.forEach { layer ->
+                                    DropdownMenuItem(
+                                        text = { Text(layer.name) },
+                                        onClick = {
+                                            if (screenModel.activeLayers.isNotEmpty() && !screenModel.activeLayers[0].isOverlay) {
+                                                screenModel.activeLayers[0] = layer
+                                            } else {
+                                                screenModel.activeLayers.add(0, layer)
+                                            }
+                                            screenModel.updateActiveLayers()
+                                            showLayerMenu = false
+                                        },
+                                        trailingIcon = {
+                                            if (screenModel.activeLayers.contains(layer)) {
+                                                Icon(Icons.Default.Layers, contentDescription = "Selected")
+                                            }
+                                        }
+                                    )
+                                }
+
+                                HorizontalDivider()
+
+                                Text(
+                                    "Overlays",
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+
+                                overlayLayers.forEach { layer ->
+                                    DropdownMenuItem(
+                                        text = { Text(layer.name) },
+                                        onClick = {
+                                            if (screenModel.activeLayers.contains(layer)) {
+                                                screenModel.activeLayers.remove(layer)
+                                            } else {
+                                                screenModel.activeLayers.add(layer)
+                                            }
+                                            screenModel.updateActiveLayers()
+                                            showLayerMenu = false
+                                        },
+                                        trailingIcon = {
+                                            if (screenModel.activeLayers.contains(layer)) {
+                                                Icon(Icons.Default.Layers, contentDescription = "Selected")
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
-                }
-            }
 
-            selectedTrack?.let { track ->
-                val prefs = screenModel.trackStatsPrefs[track.id]
-                val context = TrackStatsContext.fromConfig(config, prefs)
-                Box(modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)) {
-                    TrackStatsPanel(
-                        track = track,
-                        context = context,
-                        prefs = prefs,
-                        onUpdatePrefs = { updated -> screenModel.updateTrackStatsPrefs(updated) },
-                        showHeader = false,
-                        allowOverrides = false
-                    )
-                }
-            }
-
-            // Layer Selection Button
-            Box(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)) {
-                SmallFloatingActionButton(
-                    onClick = { showLayerMenu = true }
-                ) {
-                    Icon(Icons.Default.Layers, contentDescription = "Layers")
-                }
-
-                DropdownMenu(
-                    expanded = showLayerMenu,
-                    onDismissRequest = { showLayerMenu = false }
-                ) {
-                    val layers = listOf(
-                        MapLayer.OpenStreetMap,
-                        MapLayer.OpenCycleMap,
-                        MapLayer.OpenSnowMap,
-                        MapLayer.WaymarkedTrailsSki
-                    )
-                    val baseLayers = layers.filter { !it.isOverlay }
-                    val overlayLayers = layers.filter { it.isOverlay }
-
-                    Text(
-                        "Base Maps",
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    baseLayers.forEach { layer ->
-                        DropdownMenuItem(
-                            text = { Text(layer.name) },
-                            onClick = {
-                                // It's a base layer, replace current base layer
-                                // For now, assume the first layer is the base layer
-                                if (screenModel.activeLayers.isNotEmpty() && !screenModel.activeLayers[0].isOverlay) {
-                                    screenModel.activeLayers[0] = layer
-                                } else {
-                                    screenModel.activeLayers.add(0, layer)
+                    Surface(
+                        modifier = Modifier
+                            .widthIn(max = 320.dp)
+                            .align(Alignment.End),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        tonalElevation = 2.dp,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Box {
+                                FilledTonalButton(
+                                    onClick = { showTrackMenu = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        selectedTrack?.name ?: "Select track",
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                                 }
-                                screenModel.updateActiveLayers()
-                                showLayerMenu = false
-                            },
-                            trailingIcon = {
-                                if (screenModel.activeLayers.contains(layer)) {
-                                    Icon(Icons.Default.Layers, contentDescription = "Selected")
+                                DropdownMenu(
+                                    expanded = showTrackMenu,
+                                    onDismissRequest = { showTrackMenu = false }
+                                ) {
+                                    screenModel.activeTracks.forEach { track ->
+                                        DropdownMenuItem(
+                                            text = { Text(track.name) },
+                                            onClick = {
+                                                screenModel.updateSelectedTrack(track.id)
+                                                showTrackMenu = false
+                                            }
+                                        )
+                                    }
                                 }
                             }
-                        )
+
+                            selectedTrack?.let { track ->
+                                val prefs = screenModel.trackStatsPrefs[track.id]
+                                val context = TrackStatsContext.fromConfig(config, prefs)
+                                TrackStatsPanel(
+                                    track = track,
+                                    context = context,
+                                    prefs = prefs,
+                                    onUpdatePrefs = { updated -> screenModel.updateTrackStatsPrefs(updated) },
+                                    showHeader = false,
+                                    allowOverrides = false,
+                                    alignEnd = false,
+                                    compact = false,
+                                    fillWidth = true,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
+                        }
                     }
 
-                    HorizontalDivider()
-
-                    Text(
-                        "Overlays",
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    overlayLayers.forEach { layer ->
-                        DropdownMenuItem(
-                            text = { Text(layer.name) },
-                            onClick = {
-                                if (screenModel.activeLayers.contains(layer)) {
-                                    screenModel.activeLayers.remove(layer)
-                                } else {
-                                    screenModel.activeLayers.add(layer)
-                                }
-                                screenModel.updateActiveLayers()
-                                showLayerMenu = false
-                            },
-                            trailingIcon = {
-                                if (screenModel.activeLayers.contains(layer)) {
-                                    Icon(Icons.Default.Layers, contentDescription = "Selected")
-                                }
+                    Surface(
+                        modifier = Modifier
+                            .widthIn(min = 44.dp, max = 64.dp)
+                            .align(Alignment.End),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        tonalElevation = 2.dp,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Column(modifier = Modifier.padding(6.dp)) {
+                            FilledTonalButton(
+                                onClick = {
+                                    val focus = Offset(
+                                        screenModel.viewSize.width / 2f,
+                                        screenModel.viewSize.height / 2f
+                                    )
+                                    updateZoomAt(screenModel.zoom + 1, focus)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("+", style = MaterialTheme.typography.titleLarge)
                             }
-                        )
+                            FilledTonalButton(
+                                onClick = {
+                                    val focus = Offset(
+                                        screenModel.viewSize.width / 2f,
+                                        screenModel.viewSize.height / 2f
+                                    )
+                                    updateZoomAt(screenModel.zoom - 1, focus)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp)
+                            ) {
+                                Text("-", style = MaterialTheme.typography.titleLarge)
+                            }
+                        }
                     }
                 }
             }
