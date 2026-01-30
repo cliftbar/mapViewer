@@ -69,6 +69,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - [x] Move bottom navigation into a shared tab panel and relocate map stats into the bottom panel.
 - [ ] Implement Raster Overlays.
 - Track stats decisions: Track screen uses expandable details; map selector dropdown; unit prefs support meters/kilometers/feet/miles for distance and km/h/m/s/mph/knots for speed; defaults use moving time and speed threshold with 0.1 m/s and 120s; per-track overrides include avg speed + stopped time settings; tests in commonMain package.
+- Track stats spec in `specs/track-stats/track-stats-spec.md` updated to reflect completed implementation and resolved UX decisions.
 - Unit preferences live in Settings -> General; per-track unit overrides are supported.
 
 ## Major Lessons from Session

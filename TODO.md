@@ -22,10 +22,10 @@
   - [ ] [iOS] Background mode + task scheduling + permission flow.
   - [ ] [Android][iOS] Add pause/resume + recovery after app restart.
 
-- [ ] [Android][iOS][Desktop][Web] Track list stats.
-  - [ ] [Android][iOS][Desktop][Web] Compute distance/duration/elevation from track points.
-  - [ ] [Android][iOS][Desktop][Web] Store computed stats for quick display.
-  - [ ] [Android][iOS][Desktop][Web] Add unit tests for stats accuracy.
+- [x] [Android][iOS][Desktop][Web] Track list stats.
+  - [x] [Android][iOS][Desktop][Web] Compute distance/duration/elevation from track points.
+  - [x] [Android][iOS][Desktop][Web] Store computed stats for quick display.
+  - [x] [Android][iOS][Desktop][Web] Add unit tests for stats accuracy.
 
 - [ ] [Android][iOS][Desktop][Web] Import validation + user-facing errors.
   - [ ] [Android][iOS][Desktop][Web] Validate GPX/GeoJSON schema + required fields.

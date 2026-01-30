@@ -100,41 +100,41 @@ Queries:
 - Net elevation = last - first (within ordered points with elevation).
 
 ## Implementation Steps
-- [ ] 1: **Schema + config updates**
+- [x] 1: **Schema + config updates**
    - Add `track_stats_prefs` table + queries in `1.sq`.
    - Add defaults in `Config` and update serialization.
 
-- [ ] 2: **Stats module**
+- [x] 2: **Stats module**
    - Implement models (`TrackStatsPrefs`, `TrackStatsContext`, enums, definitions).
    - Implement stopped time algorithm interface + registry.
    - Implement `TrackStatsCalculator` with helpers (distance, speed samples, elevation).
 
-- [ ] 3: **Repository support**
+- [x] 3: **Repository support**
    - Add methods in `TrackRepository`:
      - `getTrackStatsPrefs(trackId)`
      - `getTrackStatsPrefsMap()`
      - `saveTrackStatsPrefs(prefs)`
 
-- [ ] 4: **Settings UI**
+- [x] 4: **Settings UI**
    - Add "Stats" section to `SettingsScreen`:
      - Default avg speed basis toggle.
      - Stopped algorithm dropdown.
      - Algorithm config fields.
    - Wire to `ConfigRepository.saveConfig`.
 
-- [ ] 5: **Stats UI components**
+- [x] 5: **Stats UI components**
    - Add `TrackStatsPanel` composable in `ui/components`.
    - Provide inline avg speed toggle that calls viewmodel update.
 
-- [ ] 6: **Map screen integration**
+- [x] 6: **Map screen integration**
    - Add selector for visible tracks (dropdown).
    - Render stats for selected track using `TrackStatsCalculator`.
 
-- [ ] 7: **Track screen integration**
+- [x] 7: **Track screen integration**
    - Add stats panel per track (inline or expandable section).
    - Use per-track prefs + defaults to compute context.
 
-- [ ] 8: **Tests**
+- [x] 8: **Tests**
    - Add unit tests for `TrackStatsCalculator`:
      - Single-point track.
      - Missing timestamps.
@@ -143,5 +143,5 @@ Queries:
      - Avg speed basis total vs moving.
 
 ## Open UX Decisions (for implementation)
-- Track screen stats layout: inline below each track or expandable details panel.
-- Units (km/h, meters) are fixed for now; later could add unit prefs.
+- Track screen stats layout: resolved as expandable details panel.
+- Units now support per-app and per-track preferences (distance: meters/kilometers/feet/miles; speed: km/h, m/s, mph, knots).
