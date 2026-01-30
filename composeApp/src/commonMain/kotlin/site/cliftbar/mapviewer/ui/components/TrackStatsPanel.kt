@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -46,7 +48,8 @@ fun TrackStatsPanel(
     allowOverrides: Boolean = false,
     alignEnd: Boolean = false,
     compact: Boolean = false,
-    fillWidth: Boolean = true
+    fillWidth: Boolean = true,
+    columns: Int = 1
 ) {
     val calculator = remember { TrackStatsCalculator() }
     val stats = calculator.computeStats(track, context)
@@ -56,11 +59,6 @@ fun TrackStatsPanel(
     val avgSpeedLabel = when (context.avgSpeedBasis) {
         AvgSpeedBasis.TOTAL_TIME -> "Total time"
         AvgSpeedBasis.MOVING_TIME -> "Moving time"
-    }
-    val rowArrangement = if (alignEnd) {
-        Arrangement.spacedBy(12.dp, Alignment.End)
-    } else {
-        Arrangement.SpaceBetween
     }
     val textAlign = if (alignEnd) TextAlign.End else TextAlign.Start
     val labelStyle = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodySmall
@@ -82,11 +80,15 @@ fun TrackStatsPanel(
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = if (compact) 4.dp else 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Avg speed", style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge)
-            Box(modifier = Modifier.padding(start = 8.dp)) {
+            Text(
+                "Avg speed",
+                style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Box {
                 TextButton(onClick = { showAvgSpeedMenu = true }) {
                     Text(avgSpeedLabel)
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
@@ -108,21 +110,32 @@ fun TrackStatsPanel(
             }
         }
 
-        stats.forEach { stat ->
+        val columnCount = columns.coerceAtLeast(1)
+        stats.chunked(columnCount).forEach { rowStats ->
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = verticalPadding),
-                horizontalArrangement = rowArrangement
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    stat.definition.label,
-                    style = labelStyle,
-                    textAlign = textAlign
-                )
-                Text(
-                    stat.formattedValue,
-                    style = valueStyle,
-                    textAlign = textAlign
-                )
+                rowStats.forEachIndexed { index, stat ->
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start
+                    ) {
+                        Text(
+                            stat.definition.label,
+                            style = labelStyle,
+                            textAlign = textAlign
+                        )
+                        Text(
+                            stat.formattedValue,
+                            style = valueStyle,
+                            textAlign = textAlign
+                        )
+                    }
+                    if (index != rowStats.lastIndex) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                }
             }
         }
 

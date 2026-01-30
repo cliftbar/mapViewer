@@ -21,7 +21,7 @@ actual suspend fun createDriver(): SqlDriver {
     
     // Manually handle creation/migration because the real schema is async
     val currentVersion = getVersion(driver)
-    val isBroken = currentVersion == MapViewerDB.Schema.version && !hasFoldersTable(driver)
+    val isBroken = currentVersion == MapViewerDB.Schema.version && !hasRequiredTables(driver)
     
     if (currentVersion == 0L) {
         MapViewerDB.Schema.create(driver).await()
@@ -35,11 +35,15 @@ actual suspend fun createDriver(): SqlDriver {
     return driver
 }
 
-private fun hasFoldersTable(driver: SqlDriver): Boolean {
+private fun hasRequiredTables(driver: SqlDriver): Boolean {
+    return hasTable(driver, "folders") && hasTable(driver, "track_stats_prefs")
+}
+
+private fun hasTable(driver: SqlDriver, table: String): Boolean {
     return try {
         driver.executeQuery(
             identifier = null,
-            sql = "SELECT count(*) FROM folders LIMIT 0;",
+            sql = "SELECT count(*) FROM $table LIMIT 0;",
             mapper = { QueryResult.Value(true) },
             parameters = 0
         ).value ?: false
