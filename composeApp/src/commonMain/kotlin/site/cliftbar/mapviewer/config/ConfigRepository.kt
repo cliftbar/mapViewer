@@ -9,16 +9,34 @@ import site.cliftbar.mapviewer.MapViewerDB
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 
+/**
+ * Repository for managing application configuration and profiles.
+ * 
+ * @property database The [MapViewerDB] instance for persistence.
+ */
 class ConfigRepository(private val database: MapViewerDB) {
     private val json = Json { ignoreUnknownKeys = true }
     
     private val _activeConfig = MutableStateFlow(Config())
+
+    /**
+     * A [StateFlow] of the currently active configuration.
+     */
     val activeConfig: StateFlow<Config> = _activeConfig.asStateFlow()
 
+    /**
+     * Initializes the repository by loading the active configuration.
+     */
     suspend fun initialize() {
         _activeConfig.value = loadConfig()
     }
 
+    /**
+     * Loads a configuration by name.
+     * 
+     * @param name The name of the configuration/profile to load. Defaults to "config" (the active one).
+     * @return The loaded [Config] object.
+     */
     suspend fun loadConfig(name: String = "config"): Config {
         var config = Config()
 
@@ -50,6 +68,12 @@ class ConfigRepository(private val database: MapViewerDB) {
         return config
     }
 
+    /**
+     * Saves a configuration to a profile.
+     * 
+     * @param config The [Config] object to save.
+     * @param name The name of the profile. Defaults to "config".
+     */
     suspend fun saveConfig(config: Config, name: String = "config") {
         val stringValue = json.encodeToString(config)
         database.`1Queries`.upsertConfig(name, stringValue)
@@ -58,6 +82,11 @@ class ConfigRepository(private val database: MapViewerDB) {
         }
     }
 
+    /**
+     * Switches the active configuration to the specified profile.
+     * 
+     * @param name The name of the profile to switch to.
+     */
     suspend fun switchProfile(name: String) {
         val config = loadConfig(name)
         // If we switch to a different profile, we also update "config" (the active one) 
@@ -66,16 +95,33 @@ class ConfigRepository(private val database: MapViewerDB) {
         saveConfig(config, "config")
     }
 
+    /**
+     * Retrieves all available configuration profile names.
+     * 
+     * @return A list of profile names.
+     */
     suspend fun getAllProfiles(): List<String> {
         return database.`1Queries`.getAllConfigKeys().awaitAsList()
     }
 
+    /**
+     * Deletes a configuration profile.
+     * 
+     * @param name The name of the profile to delete. The default "config" cannot be deleted.
+     */
     suspend fun deleteProfile(name: String) {
         if (name != "config") { // Don't allow deleting the default config
             database.`1Queries`.deleteConfigByKey(name)
         }
     }
 
+    /**
+     * Merges an override configuration into a base configuration.
+     * 
+     * @param base The base configuration.
+     * @param override The configuration containing overrides.
+     * @return The merged configuration.
+     */
     private fun mergeConfigs(base: Config, override: Config): Config {
         return override
     }

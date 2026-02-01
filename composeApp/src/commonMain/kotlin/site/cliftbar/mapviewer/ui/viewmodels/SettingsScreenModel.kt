@@ -12,24 +12,39 @@ import site.cliftbar.mapviewer.config.ConfigRepository
 
 class SettingsScreenModel(
     private val configRepository: ConfigRepository
-) : ScreenModel {
+) : BaseScreenModel() {
+    /**
+     * A [StateFlow] of the active configuration.
+     */
     val activeConfig = configRepository.activeConfig
     
+    /**
+     * The list of available configuration profiles.
+     */
     val profiles = mutableStateListOf<String>()
 
     init {
         refreshProfiles()
     }
 
+    /**
+     * Refreshes the list of available profiles from the repository.
+     */
     fun refreshProfiles() {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             profiles.clear()
             profiles.addAll(configRepository.getAllProfiles())
         }
     }
 
+    /**
+     * Saves the given configuration to a profile.
+     * 
+     * @param config The configuration to save.
+     * @param profileName The name of the profile. If null, saves to the default "config".
+     */
     fun saveConfig(config: Config, profileName: String? = null) {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             if (profileName != null) {
                 configRepository.saveConfig(config, profileName)
                 if (!profiles.contains(profileName)) {
@@ -41,14 +56,24 @@ class SettingsScreenModel(
         }
     }
 
+    /**
+     * Switches the active configuration to the specified profile.
+     * 
+     * @param profileName The name of the profile to switch to.
+     */
     fun switchProfile(profileName: String) {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             configRepository.switchProfile(profileName)
         }
     }
 
+    /**
+     * Deletes the specified profile.
+     * 
+     * @param profileName The name of the profile to delete.
+     */
     fun deleteProfile(profileName: String) {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             configRepository.deleteProfile(profileName)
             profiles.remove(profileName)
         }

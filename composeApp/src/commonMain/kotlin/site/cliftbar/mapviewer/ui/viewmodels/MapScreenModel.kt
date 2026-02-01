@@ -25,17 +25,32 @@ class MapScreenModel(
     initialConfig: Config,
     private val configRepository: ConfigRepository,
     private val trackRepository: TrackRepository
-) : ScreenModel {
+) : BaseScreenModel() {
     private var _config = initialConfig
 
+    /**
+     * The list of currently visible tracks on the map.
+     */
     val activeTracks = mutableStateListOf<Track>()
+
+    /**
+     * A map of track IDs to their stats preferences.
+     */
     val trackStatsPrefs = mutableStateMapOf<String, TrackStatsPrefs>()
 
     private var _selectedTrackId by mutableStateOf<String?>(null)
+
+    /**
+     * The ID of the currently selected track, if any.
+     */
     val selectedTrackId: String?
         get() = _selectedTrackId
 
     private var _zoom by mutableStateOf(initialConfig.defaultZoom)
+
+    /**
+     * The current zoom level of the map.
+     */
     var zoom: Int
         get() = _zoom
         set(value) {
@@ -44,6 +59,10 @@ class MapScreenModel(
         }
 
     private var _centerOffset by mutableStateOf(Offset.Zero)
+
+    /**
+     * The current center offset of the map view.
+     */
     var centerOffset: Offset
         get() = _centerOffset
         set(value) {
@@ -51,8 +70,16 @@ class MapScreenModel(
             saveState()
         }
 
+    /**
+     * Whether the map view has been initialized with the correct size and config.
+     */
     var initialized by mutableStateOf(false)
+
     private var _viewSize by mutableStateOf(IntSize.Zero)
+
+    /**
+     * The size of the map view in pixels.
+     */
     var viewSize: IntSize
         get() = _viewSize
         set(value) {
@@ -62,6 +89,9 @@ class MapScreenModel(
             }
         }
 
+    /**
+     * The list of active map layers (base maps and overlays).
+     */
     val activeLayers = mutableStateListOf<MapLayer>().apply {
         // Find base map
         val baseMap = MapLayer.allLayers.find { it.id == initialConfig.activeBaseMapId } ?: MapLayer.OpenStreetMap
@@ -74,7 +104,7 @@ class MapScreenModel(
 
     init {
         // We will call refreshTracks() explicitly when needed to avoid double refresh or init issues
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             // Wait for non-default config if possible, or just update when it arrives
             configRepository.activeConfig.collect { config ->
                 _config = config
@@ -92,8 +122,11 @@ class MapScreenModel(
         }
     }
 
+    /**
+     * Refreshes the active tracks and stats preferences from the repository.
+     */
     fun refreshTracks() {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             activeTracks.clear()
             activeTracks.addAll(trackRepository.getVisibleTracks())
             trackStatsPrefs.clear()
@@ -104,28 +137,44 @@ class MapScreenModel(
         }
     }
 
+    /**
+     * Updates the currently selected track.
+     * 
+     * @param trackId The ID of the track to select, or null to deselect.
+     */
     fun updateSelectedTrack(trackId: String?) {
         _selectedTrackId = trackId
     }
 
+    /**
+     * Updates the track stats preferences for a specific track.
+     * 
+     * @param prefs The new preferences.
+     */
     fun updateTrackStatsPrefs(prefs: TrackStatsPrefs) {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             trackRepository.saveTrackStatsPrefs(prefs)
             trackStatsPrefs[prefs.trackId] = prefs
         }
     }
 
+    /**
+     * Triggers a state save after updating active layers.
+     */
     fun updateActiveLayers() {
         saveState()
     }
 
     private var saveJob: Job? = null
 
+    /**
+     * Persists the current map state (zoom, center, layers) to the configuration.
+     */
     private fun saveState() {
         if (viewSize.width <= 0 || viewSize.height <= 0) return
 
         saveJob?.cancel()
-        saveJob = screenModelScope.launch {
+        saveJob = screenModelScope.launch(exceptionHandler) {
             delay(500) // Debounce 500ms
             val baseMapId = activeLayers.find { !it.isOverlay }?.id ?: "osm"
             val overlayIds = activeLayers.filter { it.isOverlay }.map { it.id }
