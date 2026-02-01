@@ -58,7 +58,7 @@ object GpxParser {
         autoPolymorphic = true
     }
 
-    fun parse(content: String): List<Track> {
+    fun parse(content: String): ParserResult {
         val sanitizedContent = if (!content.contains("xmlns=\"http://www.topografix.com/GPX/1/1\"") && !content.contains("xmlns:p=\"http://www.topografix.com/GPX/1/1\"")) {
             content.replaceFirst("<gpx", "<gpx xmlns=\"http://www.topografix.com/GPX/1/1\"")
         } else {
@@ -67,11 +67,10 @@ object GpxParser {
         return try {
             val gpxData = xml.decodeFromString<GpxData>(sanitizedContent)
             if (gpxData.tracks.isEmpty()) {
-                println("[DEBUG_LOG] GPX Parse Error: No tracks found in GPX data")
-                return emptyList()
+                return ParserResult.Error("No tracks found in GPX data")
             }
             
-            gpxData.tracks.map { gpxTrack ->
+            val tracks = gpxData.tracks.map { gpxTrack ->
                 val segments = gpxTrack.segments.map { segment ->
                     TrackSegment(
                         points = segment.points.map { point ->
@@ -98,10 +97,9 @@ object GpxParser {
                     segments = segments
                 )
             }
+            ParserResult.Success(tracks)
         } catch (e: Throwable) {
-            println("[DEBUG_LOG] GPX Parse Error: ${e.message}")
-            e.printStackTrace()
-            emptyList()
+            ParserResult.Error("GPX Parse Error: ${e.message}", e)
         }
     }
 

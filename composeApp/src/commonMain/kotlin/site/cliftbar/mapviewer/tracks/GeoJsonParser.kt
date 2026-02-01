@@ -25,14 +25,14 @@ data class GeoJsonGeometry(
 object GeoJsonParser {
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun parse(content: String): List<Track> {
+    fun parse(content: String): ParserResult {
         return try {
             val geoJson = json.decodeFromString<GeoJson>(content)
             val trackFeatures = geoJson.features.filter { it.geometry.type == "LineString" || it.geometry.type == "MultiLineString" }
             
-            if (trackFeatures.isEmpty()) return emptyList()
+            if (trackFeatures.isEmpty()) return ParserResult.Error("No tracks found in GeoJSON data")
             
-            trackFeatures.map { feature ->
+            val tracks = trackFeatures.map { feature ->
                 val name = feature.properties["name"]?.jsonPrimitive?.content ?: "Imported GeoJSON"
                 val segments = mutableListOf<TrackSegment>()
                 
@@ -50,10 +50,9 @@ object GeoJsonParser {
                     segments = segments
                 )
             }
+            ParserResult.Success(tracks)
         } catch (e: Throwable) {
-            println("[DEBUG_LOG] GeoJSON Parse Error: ${e.message}")
-            e.printStackTrace()
-            emptyList()
+            ParserResult.Error("GeoJSON Parse Error: ${e.message}", e)
         }
     }
 

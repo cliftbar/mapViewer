@@ -123,20 +123,28 @@ class TrackRepository(private val database: MapViewerDB) {
 
     suspend fun importTrack(content: String, format: String): List<Track> {
         try {
-            val tracks = withContext(Dispatchers.Default) {
+            val result = withContext(Dispatchers.Default) {
                 when (format.lowercase()) {
                     "gpx" -> GpxParser.parse(content)
                     "geojson" -> GeoJsonParser.parse(content)
-                    else -> emptyList()
+                    else -> ParserResult.Error("Unsupported format: $format")
                 }
             }
             
-            return tracks.map { track ->
-                val id = saveTrack(track)
-                track.copy(id = id)
+            return when (result) {
+                is ParserResult.Success -> {
+                    result.tracks.map { track ->
+                        val id = saveTrack(track)
+                        track.copy(id = id)
+                    }
+                }
+                is ParserResult.Error -> {
+                    println("[DEBUG_LOG] importTrack failed: ${result.message}")
+                    emptyList()
+                }
             }
         } catch (e: Exception) {
-            println("[DEBUG_LOG] importTrack failed: ${e.message}")
+            println("[DEBUG_LOG] importTrack unexpected error: ${e.message}")
             e.printStackTrace()
             return emptyList()
         }

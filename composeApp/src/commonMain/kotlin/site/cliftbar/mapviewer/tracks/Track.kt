@@ -30,3 +30,8 @@ data class TrackPoint(
     val elevation: Double? = null,
     val time: Long? = null // Timestamp in milliseconds
 )
+
+sealed interface ParserResult {
+    data class Success(val tracks: List<Track>) : ParserResult
+    data class Error(val message: String, val cause: Throwable? = null) : ParserResult
+}

@@ -123,6 +123,48 @@ class TrackStatsCalculatorTest {
         assertTrue(movingAvg > totalAvg)
     }
 
+    @Test
+    fun testInternationalDateLineCrossing() {
+        val track = Track(
+            id = "idl",
+            name = "IDL Crossing",
+            segments = listOf(
+                TrackSegment(
+                    points = listOf(
+                        TrackPoint(0.0, 179.99, time = 0L),
+                        TrackPoint(0.0, -179.99, time = 1000L)
+                    )
+                )
+            )
+        )
+        // Distance should be small, not halfway around the world
+        val stats = calculator.computeStats(track, defaultContext())
+        val avgSpeed = stats.first { it.definition.id == TrackStatId.SPEED_AVG }.value
+        assertNotNull(avgSpeed)
+        // Distance is ~2224 meters. Time is 1s. Speed ~2224 m/s.
+        // If it failed and went the long way, distance would be ~40,000 km. Speed ~40,000,000 m/s.
+        assertTrue(avgSpeed < 5000.0, "Speed $avgSpeed is too high, likely went the long way around IDL")
+    }
+
+    @Test
+    fun testHighFrequencyData() {
+        val track = Track(
+            id = "hf",
+            name = "10Hz Data",
+            segments = listOf(
+                TrackSegment(
+                    points = (0 until 100).map { i ->
+                        TrackPoint(45.0, -122.0 + i * 0.000001, time = i * 100L) // 100ms intervals
+                    }
+                )
+            )
+        )
+        val stats = calculator.computeStats(track, defaultContext())
+        val avgSpeed = stats.first { it.definition.id == TrackStatId.SPEED_AVG }.value
+        assertNotNull(avgSpeed)
+        assertTrue(avgSpeed > 0.0)
+    }
+
     private fun defaultContext(): TrackStatsContext {
         return TrackStatsContext(
             avgSpeedBasis = AvgSpeedBasis.MOVING_TIME,
