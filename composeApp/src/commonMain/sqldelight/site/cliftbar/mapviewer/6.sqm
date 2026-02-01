@@ -1,0 +1,30 @@
+-- migration to version 6
+
+-- 3.3 Unique Constraints: Ensure folder.name is unique within the same parent_id
+-- We handle NULL parent_id by using a partial index or COALESCE if needed, 
+-- but in many SQLite versions, UNIQUE constraint on (parent_id, name) allows multiple (NULL, "name").
+-- To ensure root folders also have unique names, we can use a generated column or a trigger.
+-- Here we use a unique index with COALESCE for the parent_id to treat NULL as a specific value (e.g., 'root').
+CREATE UNIQUE INDEX IF NOT EXISTS idx_folders_parent_name ON folders(COALESCE(parent_id, 'root'), name);
+
+-- 3.2 Orphaned Points Cleanup:
+-- Although we have FOREIGN KEY ... ON DELETE CASCADE, orphaned points could theoretically exist 
+-- if they were inserted with a non-existent track_id while foreign keys were disabled.
+-- We add a trigger to prevent insertion of orphaned points if they don't have a matching track.
+-- (Note: Standard FKs already do this if PRAGMA foreign_keys = ON, but the requirement specifically asks for it).
+
+CREATE TRIGGER IF NOT EXISTS trg_track_points_orphaned_insert
+BEFORE INSERT ON track_points
+FOR EACH ROW
+WHEN (SELECT COUNT(*) FROM tracks WHERE id = NEW.track_id) = 0
+BEGIN
+    SELECT RAISE(ABORT, 'Cannot insert track_point for non-existent track');
+END;
+
+-- Standardize Deletion Cascades:
+-- Verified that all existing relationships already use ON DELETE CASCADE:
+-- - track_points -> tracks (ON DELETE CASCADE) - in 1.sq and 2.sqm
+-- - folders -> folders (parent_id) (ON DELETE CASCADE) - in 1.sq and 3.sqm
+-- - track_folder_map -> tracks (ON DELETE CASCADE) - in 1.sq and 3.sqm
+-- - track_folder_map -> folders (ON DELETE CASCADE) - in 1.sq and 3.sqm
+-- - track_stats_prefs -> tracks (ON DELETE CASCADE) - in track_stats_prefs.sq and 4.sqm
