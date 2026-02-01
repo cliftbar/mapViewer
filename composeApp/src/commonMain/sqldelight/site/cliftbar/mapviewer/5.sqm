@@ -1,0 +1,4 @@
+-- migration to version 5
+CREATE INDEX IF NOT EXISTS idx_track_points_track_id ON track_points(track_id);
+CREATE INDEX IF NOT EXISTS idx_track_folder_map_folder_id ON track_folder_map(folder_id);
+CREATE INDEX IF NOT EXISTS idx_track_folder_map_track_id ON track_folder_map(track_id);

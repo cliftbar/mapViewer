@@ -43,7 +43,25 @@ class AndroidDriverFactory(private val context: Context) {
 }
 
 private fun hasRequiredTables(driver: SqlDriver): Boolean {
-    return hasTable(driver, "folders") && hasTable(driver, "track_stats_prefs")
+    return hasTable(driver, "folders") && 
+           hasTable(driver, "track_stats_prefs") &&
+           hasIndex(driver, "idx_track_points_track_id")
+}
+
+private fun hasIndex(driver: SqlDriver, indexName: String): Boolean {
+    return try {
+        driver.executeQuery(
+            identifier = null,
+            sql = "SELECT name FROM sqlite_master WHERE type='index' AND name=?;",
+            mapper = { cursor -> QueryResult.Value(cursor.next().value) },
+            parameters = 1
+        ) {
+            bindString(0, indexName)
+        }.value ?: false
+    } catch (e: Exception) {
+        println("[DEBUG_LOG] Index check failed for $indexName: ${e.message}")
+        false
+    }
 }
 
 private fun hasTable(driver: SqlDriver, table: String): Boolean {

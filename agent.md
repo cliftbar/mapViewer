@@ -84,6 +84,9 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - **Android File Selection**: The Android system's identification of GPX/GeoJSON files can be inconsistent. Providing multiple MIME types (e.g., `application/gpx+xml`, `application/xml`, `text/xml`, `application/octet-stream`) in the file picker ensures better compatibility.
 - **JDK Modularity (JDK 17+)**: Build issues involving reflection on internal `java.base` classes (common in Gradle and Kotlin/JS plugins) require `--add-opens` flags in `gradle.properties`.
 
+## Specialized Agents
+- **DBA Agent**: Manages database schema, migrations, and performance. See [dba.md](dba.md).
+
 ## Future Roadmap
 
 ### Phase 1: Core Mapping & Location

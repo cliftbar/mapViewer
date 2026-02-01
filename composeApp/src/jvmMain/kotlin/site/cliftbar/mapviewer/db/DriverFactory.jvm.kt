@@ -11,7 +11,7 @@ actual suspend fun createDriver(): SqlDriver {
     val databaseFile = File("mapviewer.db")
     val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:${databaseFile.absolutePath}")
     val currentVersion = getVersion(driver)
-    val isBroken = currentVersion == MapViewerDB.Schema.version && !hasColorColumn(driver)
+    val isBroken = currentVersion == MapViewerDB.Schema.version && (!hasColorColumn(driver) || !hasIndex(driver, "idx_track_points_track_id"))
 
     if (currentVersion == 0L) {
         MapViewerDB.Schema.create(driver).await()
@@ -22,6 +22,21 @@ actual suspend fun createDriver(): SqlDriver {
         setVersion(driver, MapViewerDB.Schema.version)
     }
     return driver
+}
+
+private fun hasIndex(driver: SqlDriver, indexName: String): Boolean {
+    return try {
+        driver.executeQuery(
+            identifier = null,
+            sql = "SELECT name FROM sqlite_master WHERE type='index' AND name=?;",
+            mapper = { cursor -> QueryResult.Value(cursor.next().value) },
+            parameters = 1
+        ) {
+            bindString(0, indexName)
+        }.value ?: false
+    } catch (e: Exception) {
+        false
+    }
 }
 
 private fun hasColorColumn(driver: SqlDriver): Boolean {
