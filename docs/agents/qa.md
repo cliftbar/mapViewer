@@ -53,8 +53,17 @@ Update this file or the "Major Lessons" section in `agent.md` as needed.
 ## Code Quality Standards
 - **KMP Patterns**: Use `expect`/`actual` only when necessary; prefer interface-based abstraction in `commonMain`.
 - **Async/Await**: Ensure all database and network operations are properly awaited and handled within coroutine scopes.
+- **Structured Error Handling**:
+    - Use `ParserResult` (sealed interface) for all data parsing operations to propagate errors without exceptions.
+    - Use `BaseScreenModel` for all `ScreenModel` classes to ensure unified error reporting via `UIError` and `CoroutineExceptionHandler`.
+- **Documentation**:
+    - Public members in Repositories and ScreenModels MUST have KDoc describing parameters and return values.
 - **Resource Management**: Properly close drivers, streams, and other resources in tests.
 - **Naming**: Tests should have descriptive names, e.g., `testShouldReturnErrorMessageWhenInputIsInvalid`.
+
+## Lessons Learned & Platform Quirks
+- **Web (JS/WasmJS)**: Heavy operations like parsing 10k+ GPS points can trigger 2000ms test timeouts. Increase timeout for these tests or optimize.
+- **Namespace Issues**: Some GPX files lack namespaces or use custom prefixes. `GpxParser` includes a sanitizer to ensure the default GPX 1.1 namespace is present for `xmlutil`.
 
 ## Reference
 This specialized agent is a sub-agent of the main agent defined in [agent.md](agent.md).

@@ -21,13 +21,13 @@ This document outlines the current state of quality assurance for the MapViewer 
 
 ### 2. Improvement Roadmap
 
-#### Phase 1: Deepen Common Logic Testing (Short Term)
+#### Phase 1: Deepen Common Logic Testing (Completed)
 1.  **Parser Edge Cases**:
-    - Add tests for large GPX files (>10MB) to monitor performance.
-    - Test malformed XML/JSON with specific recovery expectations (e.g., partial track recovery).
+    - ✅ Added tests for large GPX files (~10,000 points) to monitor performance.
+    - ✅ Tested malformed XML/JSON with specific recovery expectations via `ParserResult`.
 2.  **Stats Calculator Robustness**:
-    - Add tests for tracks crossing the International Date Line.
-    - Verify stats calculation with extremely high-frequency data (e.g., 10Hz GPS).
+    - ✅ Added tests for tracks crossing the International Date Line.
+    - ✅ Verified stats calculation with high-frequency data (10Hz GPS).
 
 #### Phase 2: Enhanced UI & State Testing (Mid Term)
 1.  **Component Testing**:
@@ -44,28 +44,38 @@ This document outlines the current state of quality assurance for the MapViewer 
 
 ---
 
-### 3. Proposed Code Quality Standards
+### 3. Proposed Code Quality Standards (Implemented)
 
 1.  **Structured Error Handling**:
-    - Replace `println` in parsers with a result-wrapped return type or a dedicated `Logger` interface.
-    - Define a `UIError` state in `ScreenModels` to display meaningful error messages to users.
+    - ✅ Replaced `println` in parsers with `ParserResult` wrapped return type.
+    - ✅ Defined `UIError` and `BaseScreenModel` to display meaningful error messages and handle coroutine exceptions.
 2.  **KDoc & Documentation**:
-    - Require KDoc for all public functions in `Repository` and `ScreenModel` classes.
-    - Maintain `docs/agents/qa.md` with updated Gradle commands and testing strategies.
+    - ✅ KDoc added for public functions in `Repository` and `ScreenModel` classes.
+    - ✅ Updated `docs/agents/qa.md` with lessons and standards.
 3.  **Coroutine Safety**:
-    - Ensure all `screenModelScope` launches handle `CancellationException` and unexpected errors via a custom `CoroutineExceptionHandler`.
+    - ✅ All `screenModelScope` launches in `ScreenModels` use `exceptionHandler` (via `BaseScreenModel`).
 
 ---
 
-### 4. Implementation Plan
+### 4. Implementation Plan (Updated)
 
-| Task | Priority | Target |
-| :--- | :--- | :--- |
-| **Parser Error Handling Refactor** | High | commonMain |
-| **TrackStatsPanel State Tests** | Medium | commonTest |
-| **Folder Hierarchy Edge Case Tests** | Medium | commonTest |
-| **JVM Screenshot Tests** | Low | jvmTest |
-| **structured UI Error Reporting** | High | commonMain |
+| Task | Priority | Status | Target |
+| :--- | :--- | :--- | :--- |
+| **Parser Error Handling Refactor** | High | ✅ Done | commonMain |
+| **Structured UI Error Reporting** | High | ✅ Done | commonMain |
+| **KDoc & Documentation** | Medium | ✅ Done | commonMain |
+| **Parser Edge Case Tests** | High | ✅ Done | commonTest |
+| **TrackStatsPanel State Tests** | Medium | To Do | commonTest |
+| **Folder Hierarchy Edge Case Tests** | Medium | To Do | commonTest |
+| **JVM Screenshot Tests** | Low | To Do | jvmTest |
+
+---
+### 5. Lessons Learned
+
+1. **JS/Browser Test Timeouts**: When testing large file parsing (e.g., 10,000 points) on JS/Browser targets, the default 2000ms timeout may be insufficient. Use `@Timeout` or increase the global timeout for such tests.
+2. **KMP Serialization & Namespaces**: `xmlutil` serialization requires careful namespace handling. Explicitly adding the default GPX namespace to the input string can improve compatibility with various GPX creators.
+3. **Structured Error Propagation**: Using a `sealed interface` for parser results (`ParserResult`) allows for much cleaner error handling in Repositories and ScreenModels compared to `try-catch` blocks and nullable returns.
+4. **Coroutine Safety in KMP**: A centralized `BaseScreenModel` with a `CoroutineExceptionHandler` significantly reduces boilerplate and ensures that unexpected errors are always reported to the UI across all platforms.
 
 ---
 *Created by QA Agent - February 2026*
