@@ -86,6 +86,7 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 
 ## Specialized Agents
 - **DBA Agent**: Manages database schema, migrations, and performance. See [dba.md](dba.md).
+- **QA Agent**: Manages testing, debugging, and code quality. See [qa.md](qa.md).
 
 ## Future Roadmap
 
