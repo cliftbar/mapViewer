@@ -41,7 +41,7 @@ sealed class MapLayer(
         val allLayers: List<MapLayer> by lazy {
             listOf(
                 OpenStreetMap,
-                OpenCycleMap,
+                // OpenCycleMap disabled - Requires API Key (Violation of ToS)
                 OpenSnowMap,
                 WaymarkedTrailsSki
             )

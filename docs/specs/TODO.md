@@ -58,9 +58,9 @@
   - [ ] [Android][iOS][Desktop][Web] Add regression tests for gesture behavior (where feasible).
 
 ## GIS & Compliance (from gis-feature-plan.md)
-- [ ] Implement `User-Agent` in `HttpClient.kt`.
+- [x] Implement `User-Agent` in `HttpClient.kt`.
 - [ ] Integrate `TileRepository` cache into `TileProvider`.
-- [ ] Add API Key support for Thunderforest layers.
+- [ ] Add API Key support for Thunderforest layers. (Currently Disabled)
 - [ ] Research Land Ownership and Satellite Hybrid sources.
 
 ## New Features (Inspired by Competitors)

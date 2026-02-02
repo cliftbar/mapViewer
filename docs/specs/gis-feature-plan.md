@@ -14,7 +14,7 @@ Currently, the application uses several third-party tile providers. To maintain 
 | Layer | Provider | Status | Requirements |
 | :--- | :--- | :--- | :--- |
 | **OpenStreetMap** | OSM Foundation | ⚠️ At Risk | Strictly requires `User-Agent`. Forbidden: Heavy/Bulk downloading. |
-| **OpenCycleMap** | Thunderforest | ❌ Violation | Requires an API Key (`?apikey=...`). Free tier limits apply. |
+| **OpenCycleMap** | Thunderforest | ⚠️ Disabled | Requires an API Key (`?apikey=...`). Free tier limits apply. |
 | **OpenSnowMap** | OpenSnowMap.org | ✅ Compliant | Attribution required (present). |
 | **Waymarked Trails** | Waymarked Trails | ✅ Compliant | Attribution required (present). |
 
@@ -25,7 +25,7 @@ Currently, the application uses several third-party tile providers. To maintain 
 ## 2. Technical GIS Roadmap
 
 ### 2.1 Tile Provider Integration
-- [ ] Implement `DefaultRequest` in `HttpClient.kt` with a compliant `User-Agent`.
+- [x] Implement `DefaultRequest` in `HttpClient.kt` with a compliant `User-Agent`.
 - [ ] Wire `TileRepository` (cache) into `TileProvider` to reduce external hits.
 - [ ] Externalize API keys (e.g., via `buildConfig` or `local.properties`).
 
