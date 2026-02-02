@@ -1,0 +1,45 @@
+CREATE TABLE tile_cache (
+    zoom INTEGER NOT NULL,
+    x INTEGER NOT NULL,
+    y INTEGER NOT NULL,
+    layer_id TEXT NOT NULL,
+    data BLOB NOT NULL,
+    expiry INTEGER NOT NULL,
+    last_accessed INTEGER NOT NULL,
+    PRIMARY KEY (layer_id, zoom, x, y)
+);
+
+CREATE INDEX idx_tile_cache_last_accessed ON tile_cache(last_accessed);
+CREATE INDEX idx_tile_cache_expiry ON tile_cache(expiry);
+
+insertTile:
+INSERT OR REPLACE INTO tile_cache(zoom, x, y, layer_id, data, expiry, last_accessed)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getTile:
+SELECT * FROM tile_cache
+WHERE layer_id = ? AND zoom = ? AND x = ? AND y = ?;
+
+updateLastAccessed:
+UPDATE tile_cache
+SET last_accessed = ?
+WHERE layer_id = ? AND zoom = ? AND x = ? AND y = ?;
+
+deleteExpiredTiles:
+DELETE FROM tile_cache
+WHERE expiry < ?;
+
+getOldestTiles:
+SELECT * FROM tile_cache
+ORDER BY last_accessed ASC
+LIMIT ?;
+
+deleteTiles:
+DELETE FROM tile_cache
+WHERE layer_id = ? AND zoom = ? AND x = ? AND y = ?;
+
+clearCache:
+DELETE FROM tile_cache;
+
+getCacheSize:
+SELECT COUNT(*) FROM tile_cache;

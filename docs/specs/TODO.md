@@ -2,7 +2,7 @@
 
 ## Existing Project Todos
 - [ ] [iOS] Implement iOS Location Provider.
-- [ ] [Android][iOS][Desktop][Web] Implement Offline Map Support (SQLDelight/FileSystem tile caching).
+- [x] [Android][iOS][Desktop][Web] Implement Offline Map Support (SQLDelight/FileSystem tile caching).
 - [ ] [Android][iOS][Desktop][Web] Implement Track Recording and GPX storage.
 - [ ] [Android][iOS][Desktop][Web] Implement Raster Overlays.
 

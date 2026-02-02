@@ -1,0 +1,14 @@
+-- Offline Map Support (Tile Caching)
+CREATE TABLE tile_cache (
+    zoom INTEGER NOT NULL,
+    x INTEGER NOT NULL,
+    y INTEGER NOT NULL,
+    layer_id TEXT NOT NULL,
+    data BLOB NOT NULL,
+    expiry INTEGER NOT NULL,
+    last_accessed INTEGER NOT NULL,
+    PRIMARY KEY (layer_id, zoom, x, y)
+);
+
+CREATE INDEX idx_tile_cache_last_accessed ON tile_cache(last_accessed);
+CREATE INDEX idx_tile_cache_expiry ON tile_cache(expiry);

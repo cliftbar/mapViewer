@@ -45,6 +45,7 @@ class AndroidDriverFactory(private val context: Context) {
 private fun hasRequiredTables(driver: SqlDriver): Boolean {
     return hasTable(driver, "folders") && 
            hasTable(driver, "track_stats_prefs") &&
+           hasTable(driver, "tile_cache") &&
            hasIndex(driver, "idx_track_points_track_id")
 }
 

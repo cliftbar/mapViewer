@@ -13,7 +13,7 @@ Currently, several foreign keys and frequently queried columns lack indexes, whi
 ## 2. Offline Map Support (Tile Caching)
 To support offline maps, a dedicated tile cache schema is required.
 
-- [ ] **Create `tile_cache` table**:
+- [x] **Create `tile_cache` table**:
     - `zoom`: INTEGER
     - `x`: INTEGER
     - `y`: INTEGER
@@ -22,7 +22,7 @@ To support offline maps, a dedicated tile cache schema is required.
     - `expiry`: INTEGER (Timestamp)
     - `last_accessed`: INTEGER (For LRU eviction)
     - PRIMARY KEY (`layer_id`, `zoom`, `x`, `y`)
-- [ ] **Implement Cleanup Logic**: A background task to delete tiles based on `expiry` or `last_accessed` when the cache exceeds a size limit (e.g., 500MB).
+- [x] **Implement Cleanup Logic**: A background task to delete tiles based on `expiry` or `last_accessed` when the cache exceeds a size limit (e.g., 500MB/5000 tiles). (Implemented in `TileRepository`).
 
 ## 3. Data Integrity & Relationships
 - [x] **Standardize Deletion Cascades**: Ensure all relationships (like `track_stats_prefs`) correctly cascade on delete. (Verified across all tables, implemented via FKs in `1.sq` through `4.sqm`).
