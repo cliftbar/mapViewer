@@ -56,3 +56,24 @@
   - [ ] [Android][iOS][Desktop][Web] Implement pan inertia + decay tuning.
   - [ ] [Android][iOS][Desktop][Web] Improve pinch zoom smoothing and velocity handling.
   - [ ] [Android][iOS][Desktop][Web] Add regression tests for gesture behavior (where feasible).
+
+## GIS & Compliance (from gis-feature-plan.md)
+- [ ] Implement `User-Agent` in `HttpClient.kt`.
+- [ ] Integrate `TileRepository` cache into `TileProvider`.
+- [ ] Add API Key support for Thunderforest layers.
+- [ ] Research Land Ownership and Satellite Hybrid sources.
+
+## New Features (Inspired by Competitors)
+- [ ] Waypoints & POIs
+  - [ ] Implement database schema for waypoints (lat, lon, icon, name, notes).
+  - [ ] Add UI for dropping pins on the map.
+  - [ ] Support custom icons/colors for different POI types.
+- [ ] Route Planning
+  - [ ] Implement "Draw Route" tool.
+  - [ ] Add snap-to-trail functionality (via external routing API like OSRM or GraphHopper).
+- [ ] Advanced Map Layers
+  - [ ] Support for Satellite + Trails hybrid overlay.
+  - [ ] Research and implement Land Ownership (Public/Private) data source.
+  - [ ] Slope Angle Shading for winter safety.
+- [ ] Multimedia Support
+  - [ ] Photo Waypoints: Attach images to coordinates/waypoints.

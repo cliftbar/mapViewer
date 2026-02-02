@@ -85,10 +85,11 @@ This is a Kotlin Multiplatform (KMP) mapping application.
 - **JDK Modularity (JDK 17+)**: Build issues involving reflection on internal `java.base` classes (common in Gradle and Kotlin/JS plugins) require `--add-opens` flags in `gradle.properties`.
 
 ## Specialized Agents
-All specialized agents are located in `docs/agents/`. Future agents MUST be added to this directory and referenced here.
+All specialized agents are located in `docs/agents/`. Future agents MUST be added to this directory and referenced here. When creating a new agent, update this guideline file and `.junie/guidelines.md` accordingly.
 
 - **DBA Agent**: Manages database schema, migrations, and performance. See [dba.md](dba.md).
 - **QA Agent**: Manages testing, debugging, and code quality. See [qa.md](qa.md).
+- **GIS Agent**: Manages GIS-specific nuances, coordinate systems, and mapping licenses. See [gis-agent.md](gis-agent.md).
 
 ## Project Structure Guidelines
 - **Specifications & Plans**: All project specifications, feature plans, and roadmaps must be stored in `docs/specs/`.
