@@ -18,6 +18,7 @@ fun MainViewController() = ComposeUIViewController {
         val db = database!!
         val configRepository = remember { ConfigRepository(db) }
         val trackRepository = remember { TrackRepository(db) }
-        App(db, configRepository, trackRepository)
+        val tileRepository = remember { site.cliftbar.mapviewer.map.TileRepository(db, kotlinx.coroutines.Dispatchers.Default) }
+        App(db, configRepository, trackRepository, tileRepository)
     }
 }

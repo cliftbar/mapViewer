@@ -26,7 +26,7 @@ Currently, the application uses several third-party tile providers. To maintain 
 
 ### 2.1 Tile Provider Integration
 - [x] Implement `DefaultRequest` in `HttpClient.kt` with a compliant `User-Agent`.
-- [ ] Wire `TileRepository` (cache) into `TileProvider` to reduce external hits.
+- [x] Wire `TileRepository` (cache) into `TileProvider` to reduce external hits.
 - [ ] Externalize API keys (e.g., via `buildConfig` or `local.properties`).
 
 ### 2.2 Advanced Overlays

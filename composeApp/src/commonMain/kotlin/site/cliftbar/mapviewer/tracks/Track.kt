@@ -1,7 +1,6 @@
 package site.cliftbar.mapviewer.tracks
 
 import kotlinx.serialization.Serializable
-import kotlinx.datetime.Instant
 
 @Serializable
 enum class LineStyle {

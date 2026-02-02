@@ -49,10 +49,11 @@ class MapScreen : Tab {
     override fun Content() {
         val configRepository = site.cliftbar.mapviewer.LocalConfigRepository.current
         val trackRepository = site.cliftbar.mapviewer.LocalTrackRepository.current
+        val tileRepository = site.cliftbar.mapviewer.LocalTileRepository.current
         val bottomPanelContent = LocalBottomPanelContent.current
         val config by configRepository.activeConfig.collectAsState()
         val screenModel = rememberScreenModel { MapScreenModel(config, configRepository, trackRepository) }
-        val tileProvider = remember { TileProvider(httpClient) }
+        val tileProvider = remember { TileProvider(httpClient, tileRepository) }
         var showLayerMenu by remember { mutableStateOf(false) }
         var showTrackMenu by remember { mutableStateOf(false) }
 
@@ -161,12 +162,7 @@ class MapScreen : Tab {
                                 expanded = showLayerMenu,
                                 onDismissRequest = { showLayerMenu = false }
                             ) {
-                                val layers = listOf(
-                                    MapLayer.OpenStreetMap,
-                                    MapLayer.OpenCycleMap,
-                                    MapLayer.OpenSnowMap,
-                                    MapLayer.WaymarkedTrailsSki
-                                )
+                                val layers = MapLayer.allLayers
                                 val baseLayers = layers.filter { !it.isOverlay }
                                 val overlayLayers = layers.filter { it.isOverlay }
 

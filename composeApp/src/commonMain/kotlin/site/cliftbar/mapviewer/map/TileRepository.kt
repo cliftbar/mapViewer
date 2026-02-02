@@ -5,11 +5,11 @@ import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import site.cliftbar.mapviewer.MapViewerDB
 import site.cliftbar.mapviewer.Tile_cache
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.days
+import kotlinx.datetime.Instant as KInstant
 
 class TileRepository(
     private val db: MapViewerDB,
@@ -38,7 +38,7 @@ class TileRepository(
      */
     fun setMockMillis(millis: Long) { mockMillis = millis }
 
-    private fun getNowMillis(): Long = mockMillis ?: Instant.parse("2024-01-01T00:00:00Z").toEpochMilliseconds()
+    private fun getNowMillis(): Long = mockMillis ?: KInstant.parse("2024-01-01T00:00:00Z").toEpochMilliseconds()
 
     /**
      * Inserts a tile into the cache and performs maintenance (expiry and LRU eviction).
@@ -52,7 +52,7 @@ class TileRepository(
         expiryDays: Int = 30
     ) = withContext(ioContext) {
         val now = getNowMillis()
-        val expiry = now + (expiryDays.toLong() * 24 * 60 * 60 * 1000)
+        val expiry = now + expiryDays.days.inWholeMilliseconds
         
         db.transaction {
             queries.insertTile(zoom.toLong(), x.toLong(), y.toLong(), layerId, data, expiry, now)

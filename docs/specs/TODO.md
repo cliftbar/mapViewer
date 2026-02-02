@@ -59,7 +59,7 @@
 
 ## GIS & Compliance (from gis-feature-plan.md)
 - [x] Implement `User-Agent` in `HttpClient.kt`.
-- [ ] Integrate `TileRepository` cache into `TileProvider`.
+- [x] Integrate `TileRepository` cache into `TileProvider`.
 - [ ] Add API Key support for Thunderforest layers. (Currently Disabled)
 - [ ] Research Land Ownership and Satellite Hybrid sources.
 

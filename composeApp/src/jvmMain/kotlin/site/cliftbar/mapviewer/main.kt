@@ -39,6 +39,7 @@ fun main() {
                 val db = database!!
                 val configRepository = remember { ConfigRepository(db) }
                 val trackRepository = remember { TrackRepository(db) }
+                val tileRepository = remember { site.cliftbar.mapviewer.map.TileRepository(db, kotlinx.coroutines.Dispatchers.IO) }
                 val config by configRepository.activeConfig.collectAsState()
 
                 val darkTheme = when (config.theme) {
@@ -55,7 +56,7 @@ fun main() {
                     }
                 }
 
-                App(db, configRepository, trackRepository)
+                App(db, configRepository, trackRepository, tileRepository)
             } else if (error != null) {
                 Text("Error: $error")
             } else {

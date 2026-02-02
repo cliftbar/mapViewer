@@ -42,13 +42,14 @@ class MainActivity : ComponentActivity() {
                 val db = database!!
                 val configRepository = remember { ConfigRepository(db) }
                 val trackRepository = remember { TrackRepository(db) }
+                val tileRepository = remember { site.cliftbar.mapviewer.map.TileRepository(db, kotlinx.coroutines.Dispatchers.Default) }
                 val config by configRepository.activeConfig.collectAsState()
                 val darkTheme = when (config.theme) {
                     AppTheme.SYSTEM -> isSystemInDarkTheme()
                     AppTheme.LIGHT -> false
                     AppTheme.DARK -> true
                 }
-                App(db, configRepository, trackRepository)
+                App(db, configRepository, trackRepository, tileRepository)
                 AndroidSystemBars(darkTheme)
             }
         }

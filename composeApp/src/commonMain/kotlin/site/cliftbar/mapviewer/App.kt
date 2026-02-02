@@ -36,7 +36,8 @@ import site.cliftbar.mapviewer.config.AppTheme
 fun App(
     database: MapViewerDB,
     configRepository: ConfigRepository,
-    trackRepository: TrackRepository
+    trackRepository: TrackRepository,
+    tileRepository: site.cliftbar.mapviewer.map.TileRepository
 ) {
     val config by configRepository.activeConfig.collectAsState()
 
@@ -52,7 +53,8 @@ fun App(
 
     CompositionLocalProvider(
         LocalConfigRepository provides configRepository,
-        LocalTrackRepository provides trackRepository
+        LocalTrackRepository provides trackRepository,
+        LocalTileRepository provides tileRepository
     ) {
         MaterialTheme(
             colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()
@@ -95,6 +97,10 @@ val LocalConfigRepository = staticCompositionLocalOf<ConfigRepository> {
 
 val LocalTrackRepository = staticCompositionLocalOf<TrackRepository> {
     error("No TrackRepository provided")
+}
+
+val LocalTileRepository = staticCompositionLocalOf<site.cliftbar.mapviewer.map.TileRepository> {
+    error("No TileRepository provided")
 }
 
 val LocalBottomPanelContent = staticCompositionLocalOf<MutableState<(@Composable () -> Unit)?>> {

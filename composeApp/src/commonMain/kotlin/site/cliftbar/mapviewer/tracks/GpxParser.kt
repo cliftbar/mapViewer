@@ -1,9 +1,8 @@
 package site.cliftbar.mapviewer.tracks
 
+import kotlinx.datetime.Instant
 import kotlinx.serialization.*
 import nl.adaptivity.xmlutil.serialization.*
-import nl.adaptivity.xmlutil.XMLConstants
-import kotlinx.datetime.Instant
 
 @Serializable
 @XmlSerialName("gpx", "http://www.topografix.com/GPX/1/1", "")
